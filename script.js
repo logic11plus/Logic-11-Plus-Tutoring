@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const OFFICIAL_EMAIL = 'logic11plus@gmail.com';
 
   // Paste your Google Apps Script Web App URL here after deploying (see google-sheets-automation.js)
-  const GOOGLE_SHEET_WEBAPP_URL = ''; // e.g. 'https://script.google.com/macros/s/AKfycbxIydcWoZmumq6C9jQtPpVCyBJ6DjknvLwisH4bePaH7l4_S98X8WNIgEo8THP4ibq2/exec'
+  const GOOGLE_SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxIydcWoZmumq6C9jQtPpVCyBJ6DjknvLwisH4bePaH7l4_S98X8WNIgEo8THP4ibq2/exec';
 
   // DOM Elements
   const bookingForm = document.getElementById('tuitionBookingForm');
