@@ -187,8 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
       confirmEmail.textContent = newLead.parentEmail;
 
       // 4. Show confirmation modal
-      confirmationModal.classList.add('active');
-      confirmationModal.setAttribute('aria-hidden', 'false');
+      confirmationModal.style.display = 'flex';
+      setTimeout(() => confirmationModal.classList.add('active'), 10);
 
       // 5. Reset form fields
       bookingForm.reset();
@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (closeConfirmModalBtn) {
     closeConfirmModalBtn.addEventListener('click', () => {
       confirmationModal.classList.remove('active');
-      confirmationModal.setAttribute('aria-hidden', 'true');
+      setTimeout(() => { confirmationModal.style.display = 'none'; }, 200);
     });
   }
 
@@ -207,15 +207,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (viewLeadsModalBtn) {
     viewLeadsModalBtn.addEventListener('click', () => {
       renderLeadsTable();
-      leadsModal.classList.add('active');
-      leadsModal.setAttribute('aria-hidden', 'false');
+      leadsModal.style.display = 'flex';
+      setTimeout(() => leadsModal.classList.add('active'), 10);
     });
   }
 
   if (closeLeadsModalBtn) {
     closeLeadsModalBtn.addEventListener('click', () => {
       leadsModal.classList.remove('active');
-      leadsModal.setAttribute('aria-hidden', 'true');
+      setTimeout(() => { leadsModal.style.display = 'none'; }, 200);
     });
   }
 
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.classList.remove('active');
-        modal.setAttribute('aria-hidden', 'true');
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
       }
     });
   });
