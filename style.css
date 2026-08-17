@@ -1,16 +1,16 @@
 /* ==========================================================================
-   Logic 11+ Stylesheet - Warm, Inviting & Academic Education Design System
+   Logic 11+ Stylesheet - Warm & Engaging with Mathematical Graph Background
    ========================================================================== */
 
 :root {
-  /* Warm, Welcoming & Refined Palette */
-  --c-primary: #1e3a5f;         /* Deep Navy Blue */
-  --c-primary-light: #2b5182;   /* Lighter Navy */
-  --c-primary-dark: #12243d;
+  /* Warm, Welcoming Palette */
+  --c-primary: #1a3254;         /* Deep Slate Navy */
+  --c-primary-light: #284c7d;
+  --c-primary-dark: #102138;
   
-  --c-terracotta: #c25e38;      /* Warm Terracotta / Clay Accent */
-  --c-terracotta-hover: #ab4f2d;
-  --c-terracotta-soft: #fbf0eb;
+  --c-terracotta: #c45b36;      /* Warm Terracotta / Clay */
+  --c-terracotta-hover: #ad4b29;
+  --c-terracotta-soft: #fbf1ec;
 
   --c-amber: #d97706;           /* Warm Golden Accent */
   --c-amber-soft: #fef3c7;
@@ -19,17 +19,17 @@
   --c-sage-soft: #d1fae5;
 
   /* Surfaces & Backgrounds */
-  --c-bg: #fcfbf9;              /* Warm Alabaster White */
+  --c-bg: #faf8f5;              /* Warm Alabaster Cream */
   --c-surface: #ffffff;
-  --c-surface-warm: #f7f4ee;     /* Warm Cream */
-  --c-surface-soft: #efebe2;
+  --c-surface-warm: #f4efe6;     /* Warmer Sand / Biscuit Surface */
+  --c-surface-soft: #ece4d5;
   
   /* Text & Borders */
-  --c-text-dark: #1c2430;       /* Rich Charcoal */
-  --c-text-body: #374151;       /* Warm Neutral Dark */
-  --c-text-muted: #6b7280;      /* Muted Slate */
-  --c-border: #e8e3d9;          /* Warm Subtle Border */
-  --c-border-strong: #d6cebf;
+  --c-text-dark: #19212d;
+  --c-text-body: #374151;
+  --c-text-muted: #64748b;
+  --c-border: #e6dfd3;          /* Warm Subtle Border */
+  --c-border-strong: #d4caa1;
 
   /* Typography */
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -41,9 +41,9 @@
   --radius-lg: 18px;
   --radius-xl: 24px;
   
-  --shadow-sm: 0 2px 4px rgba(28, 36, 48, 0.04);
-  --shadow-md: 0 6px 20px -3px rgba(28, 36, 48, 0.07), 0 2px 6px -2px rgba(28, 36, 48, 0.04);
-  --shadow-lg: 0 16px 36px -4px rgba(28, 36, 48, 0.1), 0 4px 12px -2px rgba(28, 36, 48, 0.05);
+  --shadow-sm: 0 2px 4px rgba(26, 50, 84, 0.04);
+  --shadow-md: 0 8px 24px -4px rgba(26, 50, 84, 0.08), 0 2px 6px -2px rgba(26, 50, 84, 0.04);
+  --shadow-lg: 0 18px 40px -6px rgba(26, 50, 84, 0.12), 0 6px 16px -3px rgba(26, 50, 84, 0.06);
 
   --transition: all 0.2s ease;
 }
@@ -62,6 +62,11 @@ html {
 body {
   font-family: var(--font-sans);
   background-color: var(--c-bg);
+  /* Mathematical Isometric Grid Dot Paper Pattern */
+  background-image: radial-gradient(rgba(196, 91, 54, 0.08) 1.2px, transparent 1.2px), 
+                    radial-gradient(rgba(26, 50, 84, 0.05) 1.2px, transparent 1.2px);
+  background-size: 28px 28px;
+  background-position: 0 0, 14px 14px;
   color: var(--c-text-body);
   line-height: 1.65;
   font-size: 16px;
@@ -84,16 +89,16 @@ h1, h2, h3, h4 {
 
 h1 {
   font-family: var(--font-display);
-  font-size: 3rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-size: 3.1rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
 h2 {
   font-family: var(--font-display);
   font-size: 2.25rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 h3 {
@@ -179,8 +184,8 @@ a:hover {
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: rgba(252, 251, 249, 0.95);
-  backdrop-filter: blur(8px);
+  background-color: rgba(250, 248, 245, 0.94);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--c-border);
   padding: 0.9rem 0;
 }
@@ -210,7 +215,7 @@ a:hover {
   font-family: var(--font-display);
   font-size: 1.15rem;
   font-weight: 700;
-  box-shadow: 0 2px 6px rgba(194, 94, 56, 0.25);
+  box-shadow: 0 2px 8px rgba(196, 91, 54, 0.3);
 }
 
 .brand-name {
@@ -287,14 +292,14 @@ a:hover {
 .btn-primary {
   background-color: var(--c-terracotta);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(194, 94, 56, 0.2);
+  box-shadow: 0 3px 10px rgba(196, 91, 54, 0.25);
 }
 
 .btn-primary:hover {
   background-color: var(--c-terracotta-hover);
   color: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(194, 94, 56, 0.3);
+  box-shadow: 0 5px 16px rgba(196, 91, 54, 0.35);
   text-decoration: none;
 }
 
@@ -302,6 +307,7 @@ a:hover {
   background-color: #ffffff;
   color: var(--c-primary);
   border-color: var(--c-border-strong);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary:hover {
@@ -324,9 +330,7 @@ a:hover {
    -------------------------------------------------------------------------- */
 .hero-section {
   padding: 4.5rem 0 3.5rem;
-  background: radial-gradient(circle at 10% 20%, rgba(254, 243, 199, 0.45) 0%, transparent 40%),
-              radial-gradient(circle at 90% 80%, rgba(251, 240, 235, 0.6) 0%, transparent 50%),
-              var(--c-bg);
+  position: relative;
   border-bottom: 1px solid var(--c-border);
 }
 
@@ -342,13 +346,14 @@ a:hover {
   align-items: center;
   gap: 0.4rem;
   padding: 0.35rem 0.85rem;
-  background-color: var(--c-amber-soft);
+  background-color: #ffffff;
   color: #92400e;
   font-size: 0.85rem;
   font-weight: 700;
   border-radius: 999px;
   margin-bottom: 1.25rem;
   border: 1px solid #fde68a;
+  box-shadow: var(--shadow-sm);
 }
 
 .hero-title {
@@ -418,7 +423,7 @@ a:hover {
 .enrollment-summary-card {
   background-color: #ffffff;
   border: 1px solid var(--c-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding: 2.25rem;
   box-shadow: var(--shadow-lg);
   position: relative;
@@ -893,7 +898,7 @@ a:hover {
 .input-group textarea:focus {
   outline: none;
   border-color: var(--c-terracotta);
-  box-shadow: 0 0 0 3px rgba(194, 94, 56, 0.15);
+  box-shadow: 0 0 0 3px rgba(196, 91, 54, 0.15);
 }
 
 .input-group textarea {
@@ -1067,7 +1072,7 @@ a:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(18, 36, 61, 0.75);
+  background-color: rgba(16, 33, 56, 0.75);
   backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
