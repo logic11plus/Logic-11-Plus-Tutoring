@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (!termsCheck.checked) {
-      termsCheckError.textContent = "Please acknowledge that classes are online group format with no free taster sessions.";
+      termsCheckError.textContent = "Please confirm the booking request checkbox above.";
       isValid = false;
     }
 
