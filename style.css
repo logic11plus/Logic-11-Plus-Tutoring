@@ -96,62 +96,71 @@ body {
 .math-scratch {
   position: absolute;
   font-family: var(--font-hand);
-  color: rgba(24, 49, 83, 0.65);
-  font-size: 1.25rem;
+  color: rgba(24, 49, 83, 0.72);
+  font-size: 1.5rem;
   line-height: 1.35;
-  width: 240px;
+  width: 320px;
+  max-width: 22vw;
   user-select: none;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.03));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.04));
+  transition: opacity 0.2s ease;
 }
 
 .scratch-label {
   font-weight: 700;
-  color: rgba(196, 91, 54, 0.85);
-  font-size: 1.15rem;
-  margin-bottom: 2px;
+  color: rgba(196, 91, 54, 0.95);
+  font-size: 1.45rem;
+  margin-bottom: 4px;
   text-decoration: underline;
   text-decoration-style: wavy;
-  text-decoration-color: rgba(196, 91, 54, 0.4);
+  text-decoration-color: rgba(196, 91, 54, 0.45);
 }
 
 .scratch-calc, .scratch-eq, .scratch-sub, .scratch-check {
-  font-size: 1.2rem;
+  font-size: 1.45rem;
 }
 
 .scratch-arrow {
-  color: rgba(217, 119, 6, 0.8);
-  font-size: 1.05rem;
+  color: rgba(217, 119, 6, 0.9);
+  font-size: 1.3rem;
 }
 
 .calc-ans {
   color: #059669;
   font-weight: 700;
   border-bottom: 2px double #059669;
-  padding: 0 2px;
+  padding: 0 3px;
 }
 
-/* Absolute Positions down the sides of the viewport */
+/* Margin Positioning Relative to Centered Container (1140px / 2 = 570px) */
 .note-left {
-  left: calc(50% - 720px);
+  left: max(1.5vw, calc(50% - 600px - 340px));
 }
 
 .note-right {
-  right: calc(50% - 720px);
+  right: max(1.5vw, calc(50% - 600px - 340px));
 }
 
-.note-1 { top: 220px; transform: rotate(-3deg); }
-.note-2 { top: 280px; transform: rotate(2.5deg); }
+/* Vertical Spacing Spanning the Full Website Height */
+.note-1  { top: 160px;  transform: rotate(-3deg); }
+.note-2  { top: 220px;  transform: rotate(2.5deg); }
 
-.note-3 { top: 980px; transform: rotate(-2deg); }
-.note-4 { top: 1100px; transform: rotate(3deg); }
+.note-3  { top: 780px;  transform: rotate(-2deg); }
+.note-4  { top: 920px;  transform: rotate(3deg); }
 
-.note-5 { top: 1850px; transform: rotate(-3.5deg); }
-.note-6 { top: 1980px; transform: rotate(2deg); }
+.note-5  { top: 1540px; transform: rotate(-3.5deg); }
+.note-6  { top: 1680px; transform: rotate(2deg); }
 
-.note-7 { top: 2750px; transform: rotate(-1.5deg); }
-.note-8 { top: 2880px; transform: rotate(3.5deg); }
+.note-7  { top: 2320px; transform: rotate(-2.5deg); }
+.note-8  { top: 2480px; transform: rotate(3deg); }
 
-/* Keep main content safely above annotations layer */
+.note-9  { top: 3120px; transform: rotate(-2deg); }
+.note-10 { top: 3260px; transform: rotate(2.5deg); }
+
+.note-11 { top: 3880px; transform: rotate(-3deg); }
+.note-12 { top: 4020px; transform: rotate(3.5deg); }
+
+/* Keep main content safely elevated */
 .announcement-bar,
 .navbar,
 .hero-section,
@@ -161,14 +170,31 @@ body {
   z-index: 2;
 }
 
-@media (max-width: 1480px) {
-  .note-left { left: 18px; opacity: 0.4; }
-  .note-right { right: 18px; opacity: 0.4; }
+/* Screen Adaptability */
+@media (max-width: 1700px) {
+  .math-scratch {
+    font-size: 1.35rem;
+    width: 270px;
+  }
+  .scratch-calc, .scratch-eq, .scratch-sub, .scratch-check { font-size: 1.3rem; }
+  .scratch-label { font-size: 1.3rem; }
+  .note-left { left: 1.5vw; opacity: 0.65; }
+  .note-right { right: 1.5vw; opacity: 0.65; }
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1400px) {
   .math-scratch {
-    display: none; /* Hide cleanly on smaller screens so it doesn't overlap text */
+    font-size: 1.15rem;
+    width: 220px;
+    opacity: 0.45;
+  }
+  .scratch-calc, .scratch-eq, .scratch-sub, .scratch-check { font-size: 1.1rem; }
+  .scratch-label { font-size: 1.15rem; }
+}
+
+@media (max-width: 1200px) {
+  .math-scratch {
+    display: none; /* Hide gracefully on compact desktop/tablet to avoid overlapping main card content */
   }
 }
 
