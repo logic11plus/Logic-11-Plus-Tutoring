@@ -137,7 +137,51 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // 2. Populate confirmation modal
-      if (confirmParentName) confirmParentName.textContent = newLead.parentName;
+      // Email Enquiry Popup Logic
+const emailEnquiryBtn = document.getElementById('emailEnquiryBtn');
+const emailEnquiryModal = document.getElementById('emailEnquiryModal');
+const closeEmailModal = document.getElementById('closeEmailModal');
+const copyEmailBtn = document.getElementById('copyEmailBtn');
+const emailCopyText = document.getElementById('emailCopyText');
+if (emailEnquiryBtn && emailEnquiryModal) {
+  emailEnquiryBtn.addEventListener('click', () => {
+    emailEnquiryModal.style.display = 'flex';
+    setTimeout(() => emailEnquiryModal.classList.add('active'), 10);
+  });
+}
+if (closeEmailModal && emailEnquiryModal) {
+  closeEmailModal.addEventListener('click', () => {
+    emailEnquiryModal.classList.remove('active');
+    setTimeout(() => { emailEnquiryModal.style.display = 'none'; }, 200);
+  });
+}
+if (copyEmailBtn && emailCopyText) {
+  copyEmailBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(emailCopyText.textContent).then(() => {
+      copyEmailBtn.classList.add('copied');
+      const originalLabel = document.getElementById('copyBtnLabel');
+      if (originalLabel) originalLabel.textContent = 'Copied!';
+      setTimeout(() => {
+        copyEmailBtn.classList.remove('copied');
+        if (originalLabel) originalLabel.textContent = 'Copy';
+      }, 2000);
+    });
+  });
+}
+// Spam checkbox enabling the close button
+const spamCheck = document.getElementById('spamConfirmedCheck');
+if (spamCheck && closeConfirmModalBtn) {
+  spamCheck.addEventListener('change', () => {
+    if (spamCheck.checked) {
+      closeConfirmModalBtn.disabled = false;
+      closeConfirmModalBtn.removeAttribute('aria-disabled');
+    } else {
+      closeConfirmModalBtn.disabled = true;
+      closeConfirmModalBtn.setAttribute('aria-disabled', 'true');
+    }
+  });
+}
+
       if (confirmChildName) confirmChildName.textContent = newLead.childName;
       if (confirmChildSchool) confirmChildSchool.textContent = newLead.childSchool;
       if (confirmEmail) confirmEmail.textContent = newLead.parentEmail;
