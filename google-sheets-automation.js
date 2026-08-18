@@ -66,8 +66,21 @@ function doGet(e) {
   return ContentService.createTextOutput("Logic 11+ Google Sheet Webhook is active!");
 }
 
-// --- 2. AUTOMATED EMAIL / DRAFT CREATOR WHEN YOU TYPE 'YES' OR 'DRAFT' ---
+// --- 2. ONE-TIME PERMISSION AUTHORIZER FUNCTION ---
+// If drafts or emails fail with "Exception: Action not allowed", select this function in Apps Script and click "Run" once to grant Gmail permissions.
+function authorizeGmailPermissions() {
+  var testDraft = GmailApp.createDraft("logic11plus@gmail.com", "Permissions Test", "Testing GmailApp permissions.");
+  testDraft.deleteDraft();
+  Logger.log("GmailApp authorized successfully!");
+}
+
+// --- 3. AUTOMATED EMAIL / DRAFT CREATOR WHEN YOU TYPE 'YES' OR 'DRAFT' ---
 function onEditTrigger(e) {
+  if (!e || !e.source || !e.range) {
+    Logger.log("onEditTrigger must be triggered by editing the spreadsheet.");
+    return;
+  }
+
   var sheet = e.source.getActiveSheet();
   var range = e.range;
   var row = range.getRow();
@@ -75,7 +88,9 @@ function onEditTrigger(e) {
   
   // Column H is Column 8 ("Send Further Email")
   if (row > 1 && col === 8) {
-    var val = range.getValue().toString().trim().toLowerCase();
+    var rawVal = range.getValue();
+    if (!rawVal) return;
+    var val = rawVal.toString().trim().toLowerCase();
     
     if (val === "yes" || val === "draft") {
       var emailStatusCell = sheet.getRange(row, 9); // Column I
@@ -96,19 +111,20 @@ function onEditTrigger(e) {
       
       if (!parentEmail || parentEmail.indexOf("@") === -1) {
         SpreadsheetApp.getUi().alert("Invalid or missing email address in Column E (Row " + row + ").");
+        emailStatusCell.setValue("Error: Missing Email");
         return;
       }
       
-      var subject = "Logic 11+ Mathematics Tuition: Enrollment Details for " + childName;
+      var subject = "Logic 11+ Mathematics Tuition: Enrollment Details for " + (childName || "Your Child");
       
       var customNoteSection = "";
       if (customNote && customNote.toString().trim() !== "" && customNote.toString().trim() !== "None") {
         customNoteSection = "\nSpecial Note for Your Placement:\n" + customNote + "\n";
       }
 
-      var body = "Dear " + parentName + ",\n\n" +
-        "Thank you for registering " + childName + " (" + childSchool + ") for Logic 11+ Mathematics Tuition.\n\n" +
-        "We are pleased to confirm your place in our online group tuition cohort (" + targetYear + ").\n\n" +
+      var body = "Dear " + (parentName || "Parent") + ",\n\n" +
+        "Thank you for registering " + (childName || "your child") + (childSchool ? " (" + childSchool + ")" : "") + " for Logic 11+ Mathematics Tuition.\n\n" +
+        "We are pleased to confirm your place in our online group tuition cohort (" + (targetYear || "Year 4/5") + ").\n\n" +
         "Key Course Details:\n" +
         "• Format: 100% Online Interactive Live Group Classroom\n" +
         "• Focus: Pure 11+ Mathematics & Reasoning Mastery\n" +
@@ -124,7 +140,7 @@ function onEditTrigger(e) {
         if (val === "draft") {
           // Creates an editable draft in your Gmail Drafts folder!
           GmailApp.createDraft(parentEmail, subject, body);
-          emailStatusCell.setValue("Draft Created in Gmail");
+          emailStatusCell.setValue("Draft Created in Gmail (" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm") + ")");
         } else {
           // Sends email directly
           MailApp.sendEmail({
