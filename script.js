@@ -153,21 +153,115 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- Close Confirmation Modal ---
-  if (closeConfirmModalBtn && confirmationModal) {
-    closeConfirmModalBtn.addEventListener('click', () => {
-      confirmationModal.classList.remove('active');
-      setTimeout(() => { confirmationModal.style.display = 'none'; }, 200);
+  // --- Close Confirmation Modal (requires spam checkbox ticked first) ---
+  const spamAckCheck = document.getElementById('spamAckCheck');
+  const spamAckLabel = document.getElementById('spamAckLabel');
+
+  // Enable the close button only when checkbox is ticked
+  if (spamAckCheck && closeConfirmModalBtn) {
+    spamAckCheck.addEventListener('change', () => {
+      if (spamAckCheck.checked) {
+        closeConfirmModalBtn.disabled = false;
+        closeConfirmModalBtn.classList.remove('btn-disabled');
+        if (spamAckLabel) spamAckLabel.classList.add('ack-checked');
+      } else {
+        closeConfirmModalBtn.disabled = true;
+        closeConfirmModalBtn.classList.add('btn-disabled');
+        if (spamAckLabel) spamAckLabel.classList.remove('ack-checked');
+      }
     });
   }
 
-  // Close modal on background click
+  if (closeConfirmModalBtn && confirmationModal) {
+    closeConfirmModalBtn.addEventListener('click', () => {
+      if (closeConfirmModalBtn.disabled) return;
+      confirmationModal.classList.remove('active');
+      setTimeout(() => {
+        confirmationModal.style.display = 'none';
+        // Reset checkbox for next submission
+        if (spamAckCheck) spamAckCheck.checked = false;
+        if (closeConfirmModalBtn) closeConfirmModalBtn.disabled = true;
+        if (spamAckLabel) spamAckLabel.classList.remove('ack-checked');
+      }, 200);
+    });
+  }
+
+  // Close confirmation modal on background click (only if checkbox was already ticked)
   if (confirmationModal) {
     confirmationModal.addEventListener('click', (e) => {
-      if (e.target === confirmationModal) {
+      if (e.target === confirmationModal && !closeConfirmModalBtn.disabled) {
         confirmationModal.classList.remove('active');
         setTimeout(() => { confirmationModal.style.display = 'none'; }, 200);
       }
     });
   }
+
+  // --- Email Enquiry Copy Popup ---
+  const emailEnquiryBtn = document.getElementById('emailEnquiryBtn');
+  const emailEnquiryModal = document.getElementById('emailEnquiryModal');
+  const closeEmailEnquiryBtn = document.getElementById('closeEmailEnquiryBtn');
+  const copyEmailBtn = document.getElementById('copyEmailBtn');
+  const copyBtnText = document.getElementById('copyBtnText');
+
+  function openEmailModal() {
+    if (emailEnquiryModal) {
+      emailEnquiryModal.style.display = 'flex';
+      setTimeout(() => emailEnquiryModal.classList.add('active'), 10);
+    }
+  }
+
+  function closeEmailModal() {
+    if (emailEnquiryModal) {
+      emailEnquiryModal.classList.remove('active');
+      setTimeout(() => { emailEnquiryModal.style.display = 'none'; }, 200);
+      // Reset copy button text
+      if (copyBtnText) copyBtnText.textContent = 'Copy';
+    }
+  }
+
+  if (emailEnquiryBtn) {
+    emailEnquiryBtn.addEventListener('click', openEmailModal);
+  }
+
+  if (closeEmailEnquiryBtn) {
+    closeEmailEnquiryBtn.addEventListener('click', closeEmailModal);
+  }
+
+  // Close on backdrop click
+  if (emailEnquiryModal) {
+    emailEnquiryModal.addEventListener('click', (e) => {
+      if (e.target === emailEnquiryModal) closeEmailModal();
+    });
+  }
+
+  // Copy email to clipboard
+  if (copyEmailBtn) {
+    copyEmailBtn.addEventListener('click', () => {
+      const email = 'logic11plus@gmail.com';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(email).then(() => {
+          copyBtnText.textContent = 'Copied!';
+          copyEmailBtn.classList.add('btn-copy--success');
+          setTimeout(() => {
+            copyBtnText.textContent = 'Copy';
+            copyEmailBtn.classList.remove('btn-copy--success');
+          }, 2000);
+        });
+      } else {
+        // Fallback for older browsers
+        const tmp = document.createElement('textarea');
+        tmp.value = email;
+        tmp.style.position = 'fixed';
+        tmp.style.opacity = '0';
+        document.body.appendChild(tmp);
+        tmp.focus();
+        tmp.select();
+        document.execCommand('copy');
+        document.body.removeChild(tmp);
+        copyBtnText.textContent = 'Copied!';
+        setTimeout(() => { copyBtnText.textContent = 'Copy'; }, 2000);
+      }
+    });
+  }
 });
+
