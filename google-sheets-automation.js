@@ -21,37 +21,66 @@ function onOpen() {
     .addItem('⏳ Send "No Spaces Available" Email for Selected Row', 'sendNoSpacesEmailForActiveRow')
     .addItem('📋 Create "Waitlist Space Available" Draft for Selected Row', 'createWaitlistAvailableDraftForActiveRow')
     .addSeparator()
+    .addItem('✅ Mark Selected Row as Sent (Clear Yellow/Red Highlight)', 'markSentAndClearHighlightForActiveRow')
+    .addSeparator()
     .addItem('🔑 Authorize Permissions', 'authorizePermissions')
     .addToUi();
+}
+
+// --- 2. MENU ACTION TRIGGERS ---
+function markSentAndClearHighlightForActiveRow() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var row = sheet.getActiveCell().getRow();
+  if (row <= 1) { showAlertSafely("Please click on a row with a parent's details (Row 2 or below)."); return; }
+  
+  var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+  sheet.getRange(row, 8).setValue("Yes");
+  sheet.getRange(row, 9).setValue("Sent on " + timestamp);
+  setRowHighlight(sheet, row, null); // Clear background color completely
+  showAlertSafely("✅ Row marked as Sent and highlight cleared!");
 }
 
 // --- 2. MENU ACTION TRIGGERS ---
 function createConfirmationDraftForActiveRow() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var row = sheet.getActiveCell().getRow();
-  if (row <= 1) { SpreadsheetApp.getUi().alert("Please click on a row with a parent's details (Row 2 or below)."); return; }
+  if (row <= 1) { showAlertSafely("Please click on a row with a parent's details (Row 2 or below)."); return; }
   processConfirmationAction(sheet, row, "draft");
 }
 
 function sendConfirmationEmailForActiveRow() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var row = sheet.getActiveCell().getRow();
-  if (row <= 1) { SpreadsheetApp.getUi().alert("Please click on a row with a parent's details (Row 2 or below)."); return; }
+  if (row <= 1) { showAlertSafely("Please click on a row with a parent's details (Row 2 or below)."); return; }
   processConfirmationAction(sheet, row, "yes");
 }
 
 function sendNoSpacesEmailForActiveRow() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var row = sheet.getActiveCell().getRow();
-  if (row <= 1) { SpreadsheetApp.getUi().alert("Please click on a row with a parent's details (Row 2 or below)."); return; }
+  if (row <= 1) { showAlertSafely("Please click on a row with a parent's details (Row 2 or below)."); return; }
   processNoSpacesAction(sheet, row);
 }
 
 function createWaitlistAvailableDraftForActiveRow() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var row = sheet.getActiveCell().getRow();
-  if (row <= 1) { SpreadsheetApp.getUi().alert("Please click on a row with a parent's details (Row 2 or below)."); return; }
+  if (row <= 1) { showAlertSafely("Please click on a row with a parent's details (Row 2 or below)."); return; }
   processWaitlistAvailableDraft(sheet, row);
+}
+
+// Helper to set background color for an entire row (Columns A through I)
+function setRowHighlight(sheet, row, colorCode) {
+  try {
+    var rowRange = sheet.getRange(row, 1, 1, 9);
+    if (colorCode) {
+      rowRange.setBackground(colorCode);
+    } else {
+      rowRange.setBackground(null); // Clear background color
+    }
+  } catch (e) {
+    Logger.log("Highlight error: " + e.message);
+  }
 }
 
 // --- 3. CORE ACTION 1: CONFIRMATION / PLACEMENT EMAIL & DRAFT ---
@@ -65,7 +94,7 @@ function processConfirmationAction(sheet, row, actionType) {
   var emailStatusCell = sheet.getRange(row, 9);
   
   if (!parentEmail || parentEmail.toString().indexOf("@") === -1) {
-    SpreadsheetApp.getUi().alert("Invalid or missing email address in Column E (Row " + row + ").");
+    showAlertSafely("Invalid or missing email address in Column E (Row " + row + ").");
     emailStatusCell.setValue("Error: Missing Email");
     return;
   }
@@ -98,7 +127,8 @@ function processConfirmationAction(sheet, row, actionType) {
       GmailApp.createDraft(parentEmail, subject, body);
       emailStatusCell.setValue("Draft Created in Gmail (" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm") + ")");
       sheet.getRange(row, 8).setValue("Draft");
-      SpreadsheetApp.getUi().alert("✅ Confirmation draft created in Gmail Drafts for " + parentEmail + "!");
+      setRowHighlight(sheet, row, "#fff2b2"); // Soft pastel yellow for draft created
+      showAlertSafely("✅ Confirmation draft created in Gmail Drafts for " + parentEmail + "!");
     } else {
       MailApp.sendEmail({
         to: parentEmail,
@@ -111,11 +141,12 @@ function processConfirmationAction(sheet, row, actionType) {
       var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
       emailStatusCell.setValue("Sent Confirmation on " + timestamp);
       sheet.getRange(row, 8).setValue("Yes");
-      SpreadsheetApp.getUi().alert("✅ Confirmation email sent successfully to " + parentEmail + "!");
+      setRowHighlight(sheet, row, null); // Clear background colors once email is sent off
+      showAlertSafely("✅ Confirmation email sent successfully to " + parentEmail + "!");
     }
   } catch (err) {
     emailStatusCell.setValue("Error: " + err.message);
-    SpreadsheetApp.getUi().alert("❌ Error: " + err.message);
+    showAlertSafely("❌ Error: " + err.message);
   }
 }
 
@@ -129,7 +160,7 @@ function processNoSpacesAction(sheet, row) {
   var emailStatusCell = sheet.getRange(row, 9);
   
   if (!parentEmail || parentEmail.toString().indexOf("@") === -1) {
-    SpreadsheetApp.getUi().alert("Invalid or missing email address in Column E (Row " + row + ").");
+    showAlertSafely("Invalid or missing email address in Column E (Row " + row + ").");
     emailStatusCell.setValue("Error: Missing Email");
     return;
   }
@@ -158,10 +189,11 @@ function processNoSpacesAction(sheet, row) {
     var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
     emailStatusCell.setValue("Waitlist Email Sent on " + timestamp);
     sheet.getRange(row, 8).setValue("Waitlisted");
-    SpreadsheetApp.getUi().alert("✅ 'No Spaces / Waitlist' email sent successfully to " + parentEmail + "!");
+    setRowHighlight(sheet, row, "#ffd1d1"); // Soft pastel red for no spaces available
+    showAlertSafely("✅ 'No Spaces / Waitlist' email sent successfully to " + parentEmail + "!");
   } catch (err) {
     emailStatusCell.setValue("Error: " + err.message);
-    SpreadsheetApp.getUi().alert("❌ Error: " + err.message);
+    showAlertSafely("❌ Error: " + err.message);
   }
 }
 
@@ -171,13 +203,21 @@ function processWaitlistAvailableDraft(sheet, row) {
   var childName = sheet.getRange(row, 3).getValue();
   var childSchool = sheet.getRange(row, 4).getValue();
   var parentEmail = sheet.getRange(row, 5).getValue();
-  var targetYear = sheet.getRange(row, 6).getValue();
+  var rawTargetYear = sheet.getRange(row, 6).getValue().toString();
   var emailStatusCell = sheet.getRange(row, 9);
   
   if (!parentEmail || parentEmail.toString().indexOf("@") === -1) {
-    SpreadsheetApp.getUi().alert("Invalid or missing email address in Column E (Row " + row + ").");
+    showAlertSafely("Invalid or missing email address in Column E (Row " + row + ").");
     emailStatusCell.setValue("Error: Missing Email");
     return;
+  }
+
+  // Extract clean Year Group (e.g. "Year 4" or "Year 5") without slot times
+  var cleanCohortYear = "Year 4 / Year 5";
+  if (rawTargetYear.indexOf("Year 4") !== -1) {
+    cleanCohortYear = "Year 4";
+  } else if (rawTargetYear.indexOf("Year 5") !== -1) {
+    cleanCohortYear = "Year 5";
   }
   
   var subject = "Logic 11+ Mathematics Tuition: Space Now Available for " + (childName || "Your Child");
@@ -186,7 +226,7 @@ function processWaitlistAvailableDraft(sheet, row) {
     "Great news! A space has now opened up in our Logic 11+ Mathematics online group tuition for " + (childName || "your child") + ".\n\n" +
     "Available Session Details:\n" +
     "• Day & Time: [INSERT TIME SLOT HERE - e.g. Saturday 9:00 AM – 10:00 AM / Thursday 6:00 PM – 7:00 PM]\n" +
-    "• Cohort: " + (targetYear || "Year 4 / Year 5") + "\n" +
+    "• Cohort: " + cleanCohortYear + "\n" +
     "• Fee: £15 per 1-hour session\n" +
     "• Format: 100% Online Interactive Live Group Classroom\n\n" +
     "Please reply to this email at your earliest convenience to confirm if you would like to accept this place before it is offered to the next family on our waitlist.\n\n" +
@@ -197,10 +237,11 @@ function processWaitlistAvailableDraft(sheet, row) {
   try {
     GmailApp.createDraft(parentEmail, subject, body);
     emailStatusCell.setValue("Space Open Draft Created (" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm") + ")");
-    SpreadsheetApp.getUi().alert("✅ 'Space Available' draft created in Gmail Drafts for " + parentEmail + "! You can now open Gmail, fill in the time slot, and send.");
+    setRowHighlight(sheet, row, "#fff2b2"); // Soft pastel yellow for draft created
+    showAlertSafely("✅ 'Space Available' draft created in Gmail Drafts for " + parentEmail + "! You can now open Gmail, fill in the time slot, and send.");
   } catch (err) {
     emailStatusCell.setValue("Error: " + err.message);
-    SpreadsheetApp.getUi().alert("❌ Error: " + err.message);
+    showAlertSafely("❌ Error: " + err.message);
   }
 }
 
@@ -257,23 +298,39 @@ function onEditTrigger(e) {
   
   if (row > 1 && col === 8) {
     var rawVal = range.getValue();
-    if (!rawVal) return;
+    if (!rawVal) {
+      setRowHighlight(sheet, row, null); // If cell is cleared, clear color
+      return;
+    }
     var val = rawVal.toString().trim().toLowerCase();
     
-    if (val === "yes") {
+    if (val === "yes" || val === "sent") {
       processConfirmationAction(sheet, row, "yes");
+      setRowHighlight(sheet, row, null);
     } else if (val === "draft") {
       processConfirmationAction(sheet, row, "draft");
     } else if (val === "waitlist" || val === "no space" || val === "no spaces") {
       processNoSpacesAction(sheet, row);
+    } else if (val === "clear" || val === "done") {
+      setRowHighlight(sheet, row, null);
     }
   }
 }
 
-// One-time authorization helper
+// Safe UI alert helper that works both in spreadsheet UI and Apps Script editor
+function showAlertSafely(message) {
+  try {
+    SpreadsheetApp.getUi().alert(message);
+  } catch (err) {
+    Logger.log(message);
+  }
+}
+
+// One-time authorization helper (safe to run directly from Apps Script editor)
 function authorizePermissions() {
-  var testDraft = GmailApp.createDraft("logic11plus@gmail.com", "Test", "Test");
+  var testDraft = GmailApp.createDraft("logic11plus@gmail.com", "Permissions Test", "Permissions authorized successfully.");
   testDraft.deleteDraft();
-  SpreadsheetApp.getUi().alert("✅ Permissions successfully authorized!");
+  Logger.log("✅ GmailApp and MailApp permissions authorized successfully!");
+  showAlertSafely("✅ Permissions successfully authorized!");
 }
 
