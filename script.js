@@ -37,6 +37,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const confirmChildName = document.getElementById('confirmChildName');
   const confirmChildSchool = document.getElementById('confirmChildSchool');
   const confirmEmail = document.getElementById('confirmEmail');
+  const confirmSlot = document.getElementById('confirmSlot');
+  const slotPricingBadge = document.getElementById('slotPricingBadge');
+
+  // Dynamic slot description badge update when changing dropdown
+  if (targetYearSelect && slotPricingBadge) {
+    targetYearSelect.addEventListener('change', () => {
+      if (targetYearSelect.value.includes('Year 4')) {
+        slotPricingBadge.innerHTML = '<span>Slot: <strong>Saturday 11:00 AM – 12:00 PM</strong></span> • <span>Duration: <strong>1 Hour</strong></span> • <span>Fee: <strong>£15</strong></span>';
+      } else {
+        slotPricingBadge.innerHTML = '<span>Slot: <strong>Saturday 3:00 PM – 4:00 PM</strong></span> • <span>Duration: <strong>1 Hour</strong></span> • <span>Fee: <strong>£15</strong></span>';
+      }
+    });
+  }
 
   // Mobile menu toggle
   const mobileMenuBtn = document.getElementById('mobileMenuBtn');
@@ -141,6 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (confirmChildName) confirmChildName.textContent = newLead.childName;
       if (confirmChildSchool) confirmChildSchool.textContent = newLead.childSchool;
       if (confirmEmail) confirmEmail.textContent = newLead.parentEmail;
+      if (confirmSlot) confirmSlot.textContent = newLead.targetYear;
 
       // 3. Show confirmation modal
       if (confirmationModal) {

@@ -1502,3 +1502,58 @@ a:hover {
   margin-top: 0.5rem;
 }
 
+/* ==========================================================================
+   Form Banner Notice & Slot Pricing Badge
+   ========================================================================== */
+
+.form-banner-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #f0f7ff;
+  border: 1.5px solid #bae6fd;
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--c-primary);
+}
+
+.form-banner-notice .notice-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.form-banner-notice strong {
+  display: block;
+  color: var(--c-primary-dark);
+  font-size: 0.92rem;
+  margin-bottom: 2px;
+}
+
+.form-banner-notice p {
+  color: #334155;
+  margin: 0;
+}
+
+.slot-pricing-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--c-terracotta);
+  background: var(--c-terracotta-soft);
+  border: 1px solid rgba(196, 91, 54, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+}
+
+.slot-pricing-badge strong {
+  color: var(--c-terracotta-hover);
+  font-weight: 700;
+}
+
+
