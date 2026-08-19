@@ -43,10 +43,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Dynamic slot description badge update when changing dropdown
   if (targetYearSelect && slotPricingBadge) {
     targetYearSelect.addEventListener('change', () => {
-      if (targetYearSelect.value.includes('Year 4')) {
-        slotPricingBadge.innerHTML = '<span>Slot: <strong>Saturday 11:00 AM – 12:00 PM</strong></span> • <span>Duration: <strong>1 Hour</strong></span> • <span>Fee: <strong>£15</strong></span>';
+      const val = targetYearSelect.value;
+      if (val.includes('Saturday 9:00 AM')) {
+        slotPricingBadge.innerHTML = '<span>Slot: <strong>Saturday 9:00 AM – 10:00 AM</strong></span> • <span>Duration: <strong>1 Hour</strong></span> • <span>Fee: <strong>£15</strong></span>';
+      } else if (val.includes('Thursday 6:00 PM')) {
+        slotPricingBadge.innerHTML = '<span>Slot: <strong>Thursday 6:00 PM – 7:00 PM</strong></span> • <span>Duration: <strong>1 Hour</strong></span> • <span>Fee: <strong>£15</strong></span>';
+      } else if (val.includes('Saturday 10:00 AM')) {
+        slotPricingBadge.innerHTML = '<span>Slot: <strong>Saturday 10:00 AM – 11:00 AM</strong></span> • <span>Duration: <strong>1 Hour</strong></span> • <span>Fee: <strong>£15</strong></span>';
+      } else if (val.includes('Thursday 5:00 PM')) {
+        slotPricingBadge.innerHTML = '<span>Slot: <strong>Thursday 5:00 PM – 6:00 PM</strong></span> • <span>Duration: <strong>1 Hour</strong></span> • <span>Fee: <strong>£15</strong></span>';
       } else {
-        slotPricingBadge.innerHTML = '<span>Slot: <strong>Saturday 3:00 PM – 4:00 PM</strong></span> • <span>Duration: <strong>1 Hour</strong></span> • <span>Fee: <strong>£15</strong></span>';
+        slotPricingBadge.innerHTML = '<span>Duration: <strong>1 Hour</strong></span> • <span>Fee: <strong>£15</strong></span>';
       }
     });
   }

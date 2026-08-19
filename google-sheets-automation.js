@@ -3,65 +3,66 @@
  * LOGIC 11+ GOOGLE APPS SCRIPT: 100% RELIABLE DRAFTS & EMAILS
  * ==============================================================================
  * 
- * WHY THIS WORKS EVERY TIME:
- * Google blocks `GmailApp` inside simple edit triggers due to security restrictions.
- * Instead, this script adds a custom "🎓 Logic 11+" menu directly into your Google Sheet!
- * 
- * HOW TO USE IT:
- * 1. Open your Google Sheet. You will see a new menu at the top: "🎓 Logic 11+".
- * 2. Click on the row of the parent you want to email.
- * 3. Click "🎓 Logic 11+" -> "📝 Create Gmail Draft for Selected Row".
- * 4. Google will immediately create the draft in your logic11plus@gmail.com inbox!
- * 
- * You can also still type "Yes" or "Draft" in Column H if you install an Installable Trigger.
+ * FEATURES IN THE "🎓 Logic 11+" MENU (Next to Help):
+ * 1. 📝 Create Confirmation Draft: Creates an enrollment draft with their selected slot.
+ * 2. ✉️ Send Confirmation Email: Sends the enrollment email directly.
+ * 3. ⏳ Send "No Spaces / Waitlist" Email: Informs parent class is full and they are on the priority waitlist.
+ * 4. 📋 Create Waitlist Available Draft: Pre-fills an invitation draft with slot placeholders to fill in.
+ * 5. 🔑 Authorize Permissions: One-click one-time setup.
  */
 
 // --- 1. ADD CUSTOM MENU TO GOOGLE SHEET TOP BAR ---
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('🎓 Logic 11+')
-    .addItem('📝 Create Gmail Draft for Selected Row', 'createDraftForActiveRow')
-    .addItem('✉️ Send Email Directly for Selected Row', 'sendEmailForActiveRow')
+    .addItem('📝 Create Confirmation Draft for Selected Row', 'createConfirmationDraftForActiveRow')
+    .addItem('✉️ Send Confirmation Email for Selected Row', 'sendConfirmationEmailForActiveRow')
+    .addSeparator()
+    .addItem('⏳ Send "No Spaces Available" Email for Selected Row', 'sendNoSpacesEmailForActiveRow')
+    .addItem('📋 Create "Waitlist Space Available" Draft for Selected Row', 'createWaitlistAvailableDraftForActiveRow')
     .addSeparator()
     .addItem('🔑 Authorize Permissions', 'authorizePermissions')
     .addToUi();
 }
 
-// --- 2. ONE-CLICK DRAFT CREATOR FOR THE ROW YOU HAVE CLICKED ON ---
-function createDraftForActiveRow() {
+// --- 2. MENU ACTION TRIGGERS ---
+function createConfirmationDraftForActiveRow() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var row = sheet.getActiveCell().getRow();
-  
-  if (row <= 1) {
-    SpreadsheetApp.getUi().alert("Please click on a row with a parent's details (Row 2 or below).");
-    return;
-  }
-  
-  processRowAction(sheet, row, "draft");
+  if (row <= 1) { SpreadsheetApp.getUi().alert("Please click on a row with a parent's details (Row 2 or below)."); return; }
+  processConfirmationAction(sheet, row, "draft");
 }
 
-// --- 3. ONE-CLICK EMAIL SENDER FOR THE ROW YOU HAVE CLICKED ON ---
-function sendEmailForActiveRow() {
+function sendConfirmationEmailForActiveRow() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var row = sheet.getActiveCell().getRow();
-  
-  if (row <= 1) {
-    SpreadsheetApp.getUi().alert("Please click on a row with a parent's details (Row 2 or below).");
-    return;
-  }
-  
-  processRowAction(sheet, row, "yes");
+  if (row <= 1) { SpreadsheetApp.getUi().alert("Please click on a row with a parent's details (Row 2 or below)."); return; }
+  processConfirmationAction(sheet, row, "yes");
 }
 
-// --- 4. CORE ACTION PROCESSOR (CREATES DRAFT OR SENDS EMAIL) ---
-function processRowAction(sheet, row, actionType) {
+function sendNoSpacesEmailForActiveRow() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var row = sheet.getActiveCell().getRow();
+  if (row <= 1) { SpreadsheetApp.getUi().alert("Please click on a row with a parent's details (Row 2 or below)."); return; }
+  processNoSpacesAction(sheet, row);
+}
+
+function createWaitlistAvailableDraftForActiveRow() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var row = sheet.getActiveCell().getRow();
+  if (row <= 1) { SpreadsheetApp.getUi().alert("Please click on a row with a parent's details (Row 2 or below)."); return; }
+  processWaitlistAvailableDraft(sheet, row);
+}
+
+// --- 3. CORE ACTION 1: CONFIRMATION / PLACEMENT EMAIL & DRAFT ---
+function processConfirmationAction(sheet, row, actionType) {
   var parentName = sheet.getRange(row, 2).getValue();
   var childName = sheet.getRange(row, 3).getValue();
   var childSchool = sheet.getRange(row, 4).getValue();
   var parentEmail = sheet.getRange(row, 5).getValue();
   var targetYear = sheet.getRange(row, 6).getValue();
-  var customNote = sheet.getRange(row, 7).getValue(); // Column G custom note
-  var emailStatusCell = sheet.getRange(row, 9); // Column I
+  var customNote = sheet.getRange(row, 7).getValue();
+  var emailStatusCell = sheet.getRange(row, 9);
   
   if (!parentEmail || parentEmail.toString().indexOf("@") === -1) {
     SpreadsheetApp.getUi().alert("Invalid or missing email address in Column E (Row " + row + ").");
@@ -69,7 +70,7 @@ function processRowAction(sheet, row, actionType) {
     return;
   }
   
-  var subject = "Logic 11+ Mathematics Tuition: Enrollment Details for " + (childName || "Your Child");
+  var subject = "Logic 11+ Mathematics Tuition: Enrollment Confirmation for " + (childName || "Your Child");
   
   var customNoteSection = "";
   if (customNote && customNote.toString().trim() !== "" && customNote.toString().trim() !== "None") {
@@ -78,13 +79,15 @@ function processRowAction(sheet, row, actionType) {
 
   var body = "Dear " + (parentName || "Parent") + ",\n\n" +
     "Thank you for registering " + (childName || "your child") + (childSchool ? " (" + childSchool + ")" : "") + " for Logic 11+ Mathematics Tuition.\n\n" +
-    "We are pleased to confirm your place in our online group tuition cohort (" + (targetYear || "Year 4/5") + ").\n\n" +
-    "Key Course Details:\n" +
+    "We are pleased to confirm your place in our online group tuition cohort:\n\n" +
+    "📌 Registered Session Details:\n" +
+    "• Cohort & Time: " + (targetYear || "Online Group Session") + "\n" +
+    "• Duration: 1 Hour (Weekly)\n" +
+    "• Fee Rate: £15 per 1-hour session\n" +
     "• Format: 100% Online Interactive Live Group Classroom\n" +
-    "• Focus: Pure 11+ Mathematics & Reasoning Mastery\n" +
-    "• Contact: logic11plus@gmail.com\n" +
+    "• Tutor Contact: logic11plus@gmail.com\n" +
     customNoteSection + "\n" +
-    "Your upcoming session schedule and digital classroom link will be shared in our next follow-up.\n\n" +
+    "Your child's digital classroom link and secure payment details will be shared in our next follow-up before the first class.\n\n" +
     "If you have any questions, simply reply directly to this email.\n\n" +
     "Warm regards,\n" +
     "The Logic 11+ Team\n" +
@@ -95,7 +98,7 @@ function processRowAction(sheet, row, actionType) {
       GmailApp.createDraft(parentEmail, subject, body);
       emailStatusCell.setValue("Draft Created in Gmail (" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm") + ")");
       sheet.getRange(row, 8).setValue("Draft");
-      SpreadsheetApp.getUi().alert("✅ Draft created successfully in Gmail Drafts for " + parentEmail + "!");
+      SpreadsheetApp.getUi().alert("✅ Confirmation draft created in Gmail Drafts for " + parentEmail + "!");
     } else {
       MailApp.sendEmail({
         to: parentEmail,
@@ -106,9 +109,9 @@ function processRowAction(sheet, row, actionType) {
       });
       
       var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
-      emailStatusCell.setValue("Sent on " + timestamp);
+      emailStatusCell.setValue("Sent Confirmation on " + timestamp);
       sheet.getRange(row, 8).setValue("Yes");
-      SpreadsheetApp.getUi().alert("✅ Email sent successfully to " + parentEmail + "!");
+      SpreadsheetApp.getUi().alert("✅ Confirmation email sent successfully to " + parentEmail + "!");
     }
   } catch (err) {
     emailStatusCell.setValue("Error: " + err.message);
@@ -116,7 +119,92 @@ function processRowAction(sheet, row, actionType) {
   }
 }
 
-// --- 5. RECEIVE FORM SUBMISSION FROM WEBSITE & INSERT INTO SHEET ---
+// --- 4. CORE ACTION 2: NO SPACES AVAILABLE / WAITLIST EMAIL ---
+function processNoSpacesAction(sheet, row) {
+  var parentName = sheet.getRange(row, 2).getValue();
+  var childName = sheet.getRange(row, 3).getValue();
+  var childSchool = sheet.getRange(row, 4).getValue();
+  var parentEmail = sheet.getRange(row, 5).getValue();
+  var targetYear = sheet.getRange(row, 6).getValue();
+  var emailStatusCell = sheet.getRange(row, 9);
+  
+  if (!parentEmail || parentEmail.toString().indexOf("@") === -1) {
+    SpreadsheetApp.getUi().alert("Invalid or missing email address in Column E (Row " + row + ").");
+    emailStatusCell.setValue("Error: Missing Email");
+    return;
+  }
+  
+  var subject = "Logic 11+ Mathematics Tuition: Status Update for " + (childName || "Your Child");
+
+  var body = "Dear " + (parentName || "Parent") + ",\n\n" +
+    "Thank you for registering your interest in Logic 11+ Mathematics Tuition for " + (childName || "your child") + ".\n\n" +
+    "Due to high demand and our strict small-group capacity limits, we currently have no open spaces available in the requested session:\n" +
+    "• Requested Slot: " + (targetYear || "Online Group Session") + "\n\n" +
+    "We have automatically placed " + (childName || "your child") + " onto our Priority Waitlist. As soon as a space opens or an additional cohort is scheduled, you will be contacted immediately with first priority.\n\n" +
+    "If your schedule has flexibility or you would like to enquire about other days/times, please reply directly to this email.\n\n" +
+    "Warm regards,\n" +
+    "The Logic 11+ Team\n" +
+    "logic11plus@gmail.com";
+  
+  try {
+    MailApp.sendEmail({
+      to: parentEmail,
+      subject: subject,
+      body: body,
+      replyTo: "logic11plus@gmail.com",
+      name: "Logic 11+ Tuition"
+    });
+    
+    var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+    emailStatusCell.setValue("Waitlist Email Sent on " + timestamp);
+    sheet.getRange(row, 8).setValue("Waitlisted");
+    SpreadsheetApp.getUi().alert("✅ 'No Spaces / Waitlist' email sent successfully to " + parentEmail + "!");
+  } catch (err) {
+    emailStatusCell.setValue("Error: " + err.message);
+    SpreadsheetApp.getUi().alert("❌ Error: " + err.message);
+  }
+}
+
+// --- 5. CORE ACTION 3: WAITLIST SPACE AVAILABLE DRAFT ---
+function processWaitlistAvailableDraft(sheet, row) {
+  var parentName = sheet.getRange(row, 2).getValue();
+  var childName = sheet.getRange(row, 3).getValue();
+  var childSchool = sheet.getRange(row, 4).getValue();
+  var parentEmail = sheet.getRange(row, 5).getValue();
+  var targetYear = sheet.getRange(row, 6).getValue();
+  var emailStatusCell = sheet.getRange(row, 9);
+  
+  if (!parentEmail || parentEmail.toString().indexOf("@") === -1) {
+    SpreadsheetApp.getUi().alert("Invalid or missing email address in Column E (Row " + row + ").");
+    emailStatusCell.setValue("Error: Missing Email");
+    return;
+  }
+  
+  var subject = "Logic 11+ Mathematics Tuition: Space Now Available for " + (childName || "Your Child");
+
+  var body = "Dear " + (parentName || "Parent") + ",\n\n" +
+    "Great news! A space has now opened up in our Logic 11+ Mathematics online group tuition for " + (childName || "your child") + ".\n\n" +
+    "Available Session Details:\n" +
+    "• Day & Time: [INSERT TIME SLOT HERE - e.g. Saturday 9:00 AM – 10:00 AM / Thursday 6:00 PM – 7:00 PM]\n" +
+    "• Cohort: " + (targetYear || "Year 4 / Year 5") + "\n" +
+    "• Fee: £15 per 1-hour session\n" +
+    "• Format: 100% Online Interactive Live Group Classroom\n\n" +
+    "Please reply to this email at your earliest convenience to confirm if you would like to accept this place before it is offered to the next family on our waitlist.\n\n" +
+    "Warm regards,\n" +
+    "The Logic 11+ Team\n" +
+    "logic11plus@gmail.com";
+  
+  try {
+    GmailApp.createDraft(parentEmail, subject, body);
+    emailStatusCell.setValue("Space Open Draft Created (" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm") + ")");
+    SpreadsheetApp.getUi().alert("✅ 'Space Available' draft created in Gmail Drafts for " + parentEmail + "! You can now open Gmail, fill in the time slot, and send.");
+  } catch (err) {
+    emailStatusCell.setValue("Error: " + err.message);
+    SpreadsheetApp.getUi().alert("❌ Error: " + err.message);
+  }
+}
+
+// --- 6. RECEIVE FORM SUBMISSION FROM WEBSITE & INSERT INTO SHEET ---
 function doPost(e) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
@@ -159,7 +247,7 @@ function doGet(e) {
   return ContentService.createTextOutput("Logic 11+ Google Sheet Webhook is active!");
 }
 
-// --- 6. TRIGGER FOR AUTOMATIC TYPING IN COLUMN H ---
+// --- 7. TRIGGER FOR AUTOMATIC TYPING IN COLUMN H ---
 function onEditTrigger(e) {
   if (!e || !e.source || !e.range) return;
   var sheet = e.source.getActiveSheet();
@@ -173,9 +261,11 @@ function onEditTrigger(e) {
     var val = rawVal.toString().trim().toLowerCase();
     
     if (val === "yes") {
-      processRowAction(sheet, row, "yes");
+      processConfirmationAction(sheet, row, "yes");
     } else if (val === "draft") {
-      processRowAction(sheet, row, "draft");
+      processConfirmationAction(sheet, row, "draft");
+    } else if (val === "waitlist" || val === "no space" || val === "no spaces") {
+      processNoSpacesAction(sheet, row);
     }
   }
 }
@@ -186,3 +276,4 @@ function authorizePermissions() {
   testDraft.deleteDraft();
   SpreadsheetApp.getUi().alert("✅ Permissions successfully authorized!");
 }
+
