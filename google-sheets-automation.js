@@ -1,13 +1,14 @@
 /**
  * ==============================================================================
- * LOGIC 11+ GOOGLE APPS SCRIPT: COMPLETE PAYMENTS, CAPACITY & WEEKLY AUTOMATION
+ * LOGIC 11+ GOOGLE APPS SCRIPT: DYNAMIC WEEKLY TRACKING & AUTO-PAYMENT
  * ==============================================================================
  * 
- * COLOR CODE RULES:
- * 🔵 Blue (#cce5ff)   : Yet to pay / Payment Due for upcoming week.
- * 🟢 Green (#d1fae5)  : Paid & Confirmed (Post-payment Zoom email sent).
- * 🟡 Yellow (#fff2b2) : Draft created in Gmail awaiting your review.
- * 🔴 Red (#ffd1d1)    : Waitlisted / No spaces available.
+ * VIVID COLOR LIFECYCLE:
+ * 🔴 VIVID RED (#ff7b72)    : NEW SUBMISSION (No confirmation email sent yet)
+ * 🟡 VIVID YELLOW (#ffe066) : CONFIRMATION SENT (Registered, awaiting payment)
+ * 🔵 VIVID BLUE (#60a5fa)   : PAID (Payment confirmed in Stripe, Zoom link pending)
+ * 🟢 VIVID GREEN (#4ade80)  : ZOOM SENT (Confirmed for this week, active session space)
+ * 🟣 VIVID PURPLE (#c084fc) : SUNDAY RESET (Returning student, waiting for next week's payment)
  * 
  * SPREADSHEET HEADERS (Row 1):
  * Col A: Timestamp
@@ -17,13 +18,23 @@
  * Col E: Parent Email
  * Col F: Target Slot / Year
  * Col G: Custom Email Note
- * Col H: Send Email (Awaiting Payment / Paid / Draft / Waitlisted)
- * Col I: Email Status
- * Col J: Current Week Number (e.g. 1, 2, 3...)
+ * Col H: Send Email / Action
+ * Col I: Email Status & Delivery Log
+ * Col J: Current Week Number (1, 2, 3...)
+ * Col K: Week 1 (Paid / Not Paid)
+ * Col L: Week 2 (Paid / Not Paid)
+ * Col M: Week 3 (Paid / Not Paid) ... (Added dynamically as students advance)
  */
 
-var STRIPE_PAYMENT_LINK = "https://buy.stripe.com/test_5kQcN55Fm3A5fBW75F9R600";
+var STRIPE_PAYMENT_LINK = "https://buy.stripe.com/YOUR_STRIPE_LINK_HERE";
 var MAX_CAPACITY_PER_SLOT = 20;
+
+// Vivid Color Hex Palette
+var COLOR_RED_NEW       = "#ff7b72"; // Red: New lead, no email yet
+var COLOR_YELLOW_CONF   = "#ffe066"; // Yellow: Confirmation sent, awaiting payment
+var COLOR_BLUE_PAID     = "#60a5fa"; // Blue: Stripe paid, needs Zoom link
+var COLOR_GREEN_ZOOM    = "#4ade80"; // Green: Zoom link sent & confirmed
+var COLOR_PURPLE_RESET  = "#c084fc"; // Purple: Sunday reset, returning student awaiting next week's payment
 
 var ZOOM_LINKS = {
   "Year 4 — Saturday 9:00 AM": {
@@ -56,32 +67,33 @@ var ZOOM_LINKS = {
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('🎓 Logic 11+')
-    // Initial Registrations (Week 1)
-    .addItem('📝 Create Initial Confirmation Draft (Week 1)', 'createConfirmationDraftForActiveRow')
-    .addItem('✉️ Send Initial Confirmation Email (Week 1)', 'sendConfirmationEmailForActiveRow')
+    // Stage 1: Initial Confirmations (Red ➔ Yellow)
+    .addItem('✉️ Send Initial Confirmation Email (Turns 🟡 Yellow)', 'sendConfirmationEmailForActiveRow')
+    .addItem('📝 Create Initial Confirmation Draft', 'createConfirmationDraftForActiveRow')
     .addSeparator()
-    // Post-Payment (Zoom Link Dispatch ➔ Turns Green & Increments Week)
-    .addItem('🚀 Send Post-Payment Zoom Email (Turns Green & Confirms Place)', 'sendPostPaymentEmailForActiveRow')
-    .addItem('📝 Create Post-Payment Zoom Draft (For Selected Row)', 'createPostPaymentDraftForActiveRow')
+    // Stage 2: Mark Paid (Yellow/Purple ➔ Blue)
+    .addItem('💳 Mark Selected Row as PAID (Turns 🔵 Blue)', 'markSelectedRowAsPaid')
     .addSeparator()
-    // Continuing Students Weekly Workflow (Week 2, 3, 4...)
-    .addItem('🔁 Send Continuing Student Re-Enrollment Email (Next Week)', 'sendContinuingEmailForActiveRow')
-    .addItem('📝 Create Continuing Student Re-Enrollment Draft (Next Week)', 'createContinuingDraftForActiveRow')
-    .addItem('🔄 Run Weekly Reset (Turn Active Sessions Blue/Due for Next Week)', 'runWeeklySessionReset')
+    // Stage 3: Instant Zoom Link Dispatch (Blue ➔ Green)
+    .addItem('🚀 Send Instant Zoom Link (Turns 🟢 Green)', 'sendPostPaymentEmailForActiveRow')
+    .addItem('📝 Create Zoom Link Draft', 'createPostPaymentDraftForActiveRow')
     .addSeparator()
-    // Waitlist Management
-    .addItem('⏳ Send "No Spaces Available / Waitlist" Email', 'sendNoSpacesEmailForActiveRow')
-    .addItem('📋 Create "Waitlist Space Available" Draft', 'createWaitlistAvailableDraftForActiveRow')
+    // Stage 4: Returning Students & Weekly Reset
+    .addItem('🔄 Run Sunday Weekly Reset (Only Paid Students Turn 🟣 Purple & Add Next Week Column)', 'runWeeklySessionReset')
+    .addItem('🔁 Send Continuing Student Payment Email', 'sendContinuingEmailForActiveRow')
+    .addItem('📝 Create Continuing Student Draft', 'createContinuingDraftForActiveRow')
     .addSeparator()
-    .addItem('📊 Refresh Capacity Tracker Tab (20 Students/Slot)', 'generateCapacityTrackerTab')
+    .addItem('🎨 Apply Red Highlight to Any Uncontacted Rows', 'applyRedToNewSubmissions')
+    .addItem('📊 Refresh Capacity Tracker Tab (20 Seats/Slot)', 'generateCapacityTrackerTab')
     .addItem('🔑 Authorize Permissions', 'authorizePermissions')
     .addToUi();
 }
 
-// --- 2. COLOR HIGHLIGHT HELPER (COLUMNS A THROUGH J) ---
+// --- 2. ROW HIGHLIGHT HELPER (ACROSS ALL COLUMNS) ---
 function setRowHighlight(sheet, row, colorCode) {
   try {
-    var rowRange = sheet.getRange(row, 1, 1, 10);
+    var maxCols = Math.max(sheet.getLastColumn(), 15);
+    var rowRange = sheet.getRange(row, 1, 1, maxCols);
     if (colorCode) {
       rowRange.setBackground(colorCode);
     } else {
@@ -92,12 +104,34 @@ function setRowHighlight(sheet, row, colorCode) {
   }
 }
 
-function getRowHighlightColor(sheet, row) {
-  try {
-    return sheet.getRange(row, 1).getBackground();
-  } catch (e) {
-    return "#ffffff";
+// Helper to get or ensure week tracking column (Col K = Week 1, Col L = Week 2, Col M = Week 3...)
+function getWeekColumnIndex(sheet, weekNum) {
+  var colIndex = 10 + weekNum; // Week 1 -> Col 11 (K), Week 2 -> Col 12 (L), Week 3 -> Col 13 (M)...
+  var headerCell = sheet.getRange(1, colIndex);
+  var expectedHeader = "Week " + weekNum;
+  
+  if (!headerCell.getValue() || headerCell.getValue().toString().trim() === "") {
+    headerCell.setValue(expectedHeader).setFontWeight("bold").setBackground("#e2e8f0");
   }
+  return colIndex;
+}
+
+// Helper to mark a specific week as "Paid" or "Not Paid"
+function setStudentWeekPaymentStatus(sheet, row, weekNum, isPaid) {
+  var col = getWeekColumnIndex(sheet, weekNum);
+  var cell = sheet.getRange(row, col);
+  if (isPaid) {
+    cell.setValue("Paid").setFontColor("#15803d").setFontWeight("bold");
+  } else {
+    cell.setValue("Not Paid").setFontColor("#b91c1c").setFontWeight("normal");
+  }
+}
+
+// Helper to get current student week number from Column J
+function getStudentWeekNumber(sheet, row) {
+  var val = sheet.getRange(row, 10).getValue();
+  var num = parseInt(val, 10);
+  return isNaN(num) || num < 1 ? 1 : num;
 }
 
 // Helper to extract clean Zoom information based on target slot string
@@ -116,11 +150,28 @@ function getZoomInfoForSlot(slotString) {
   };
 }
 
-// Helper to get or default the current student week from Column J
-function getStudentWeekNumber(sheet, row) {
-  var val = sheet.getRange(row, 10).getValue();
-  var num = parseInt(val, 10);
-  return isNaN(num) || num < 1 ? 1 : num;
+// Helper to scan all uncontacted rows and apply Red highlight
+function applyRedToNewSubmissions() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Submissions") || ss.getActiveSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+
+  var data = sheet.getRange(2, 1, lastRow - 1, 10).getValues();
+  var count = 0;
+  for (var i = 0; i < data.length; i++) {
+    var rowNum = i + 2;
+    var sendStatus = data[i][7].toString().toLowerCase();
+    var emailStatus = data[i][8].toString().toLowerCase();
+    
+    // If no confirmation email has been sent yet, color Red
+    if (sendStatus === "no" || emailStatus.indexOf("pending") !== -1 || emailStatus.indexOf("new") !== -1) {
+      setRowHighlight(sheet, rowNum, COLOR_RED_NEW);
+      setStudentWeekPaymentStatus(sheet, rowNum, 1, false); // Ensure Week 1 says "Not Paid"
+      count++;
+    }
+  }
+  showAlertSafely("🔴 Checked rows: " + count + " new submission(s) highlighted in Red.");
 }
 
 // --- 3. MENU TRIGGER WRAPPERS ---
@@ -138,18 +189,21 @@ function sendConfirmationEmailForActiveRow() {
   processConfirmationAction(sheet, row, "yes");
 }
 
-function sendNoSpacesEmailForActiveRow() {
+function markSelectedRowAsPaid() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var row = sheet.getActiveCell().getRow();
   if (row <= 1) { showAlertSafely("Please click on a row with a parent's details (Row 2 or below)."); return; }
-  processNoSpacesAction(sheet, row);
-}
-
-function createWaitlistAvailableDraftForActiveRow() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var row = sheet.getActiveCell().getRow();
-  if (row <= 1) { showAlertSafely("Please click on a row with a parent's details (Row 2 or below)."); return; }
-  processWaitlistAvailableDraft(sheet, row);
+  
+  var childName = sheet.getRange(row, 3).getValue();
+  var currentWeek = getStudentWeekNumber(sheet, row);
+  var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+  
+  sheet.getRange(row, 8).setValue("Paid");
+  sheet.getRange(row, 9).setValue("Payment Confirmed in Stripe on " + timestamp + " (Week " + currentWeek + ")");
+  setStudentWeekPaymentStatus(sheet, row, currentWeek, true); // Mark Week X as "Paid"
+  setRowHighlight(sheet, row, COLOR_BLUE_PAID); // Turns VIVID BLUE
+  
+  showAlertSafely("✅ " + (childName || "Student") + " marked as PAID for Week " + currentWeek + "!\nRow is now 🔵 BLUE. Click 'Send Instant Zoom Link' to email their class pass.");
 }
 
 function sendPostPaymentEmailForActiveRow() {
@@ -180,7 +234,7 @@ function createContinuingDraftForActiveRow() {
   processContinuingCustomerAction(sheet, row, "draft");
 }
 
-// --- 4. ACTION 1: INITIAL CONFIRMATION EMAIL / DRAFT (WEEK 1) ---
+// --- 4. ACTION 1: INITIAL CONFIRMATION EMAIL (RED ➔ YELLOW) ---
 function processConfirmationAction(sheet, row, actionType) {
   var parentName = sheet.getRange(row, 2).getValue();
   var childName = sheet.getRange(row, 3).getValue();
@@ -197,10 +251,9 @@ function processConfirmationAction(sheet, row, actionType) {
     return;
   }
   
-  // Initialize Week 1 in Column J if empty
-  if (!weekCell.getValue()) {
-    weekCell.setValue(1);
-  }
+  // Set Week 1 in Column J and Column K
+  weekCell.setValue(1);
+  setStudentWeekPaymentStatus(sheet, row, 1, false);
 
   var subject = "Logic 11+ Mathematics: Enrollment Details & Payment for " + (childName || "Your Child") + " (Week 1)";
   
@@ -224,8 +277,8 @@ function processConfirmationAction(sheet, row, actionType) {
     "⚠️ CRITICAL PAYMENT INSTRUCTIONS:\n" +
     "1. In the checkout form, please enter your child's exact name (" + (childName || "as registered") + ") so the payment automatically links to their attendance record.\n" +
     "2. If you are paying for more than 1 child, please complete a separate payment for each child using their registered name.\n" +
-    "3. Important Deadline: Payment must be completed before the day of the scheduled session. If payment is not received by the day of the tuition, your child will be considered as not wanting to proceed, and the reserved slot will be released to the next family on our waitlist.\n\n" +
-    "Once your payment is received, you will automatically receive your Post-Payment Confirmation email containing your child's live Zoom classroom link and joining passcode.\n\n" +
+    "3. Important Deadline: Payment must be completed before the day of the scheduled session. If payment is not received by the day of the tuition, your child will be considered as not wanting to proceed, and the reserved slot will be released to another family.\n\n" +
+    "Once your payment is received, you will receive your Post-Payment Confirmation email containing your child's live Zoom classroom link and joining passcode.\n\n" +
     "If you have any questions, feel free to reply directly to this email.\n\n" +
     "Warm regards,\n" +
     "The Logic 11+ Team\n" +
@@ -236,7 +289,6 @@ function processConfirmationAction(sheet, row, actionType) {
       GmailApp.createDraft(parentEmail, subject, body);
       emailStatusCell.setValue("Confirmation Draft Created (Week 1) (" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm") + ")");
       sheet.getRange(row, 8).setValue("Draft");
-      setRowHighlight(sheet, row, "#fff2b2"); // Yellow
       showAlertSafely("✅ Confirmation draft created in Gmail Drafts for " + parentEmail + "!");
     } else {
       MailApp.sendEmail({
@@ -250,8 +302,8 @@ function processConfirmationAction(sheet, row, actionType) {
       var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
       emailStatusCell.setValue("Sent Confirmation (Week 1) on " + timestamp);
       sheet.getRange(row, 8).setValue("Awaiting Payment");
-      setRowHighlight(sheet, row, "#cce5ff"); // Turns Blue (Yet to pay)
-      showAlertSafely("✅ Confirmation email sent to " + parentEmail + " (Row turned Blue - Awaiting Payment).");
+      setRowHighlight(sheet, row, COLOR_YELLOW_CONF); // Turns VIVID YELLOW
+      showAlertSafely("✅ Confirmation email sent to " + parentEmail + "!\nRow is now 🟡 YELLOW (Awaiting Payment).");
     }
   } catch (err) {
     emailStatusCell.setValue("Error: " + err.message);
@@ -259,7 +311,7 @@ function processConfirmationAction(sheet, row, actionType) {
   }
 }
 
-// --- 5. ACTION 2: POST-PAYMENT ZOOM DETAILS (TURNS GREEN, COUNTS TO CAPACITY) ---
+// --- 5. ACTION 2: INSTANT POST-PAYMENT ZOOM DETAILS (BLUE ➔ GREEN) ---
 function processPostPaymentAction(sheet, row, actionType) {
   var parentName = sheet.getRange(row, 2).getValue();
   var childName = sheet.getRange(row, 3).getValue();
@@ -271,22 +323,6 @@ function processPostPaymentAction(sheet, row, actionType) {
   if (!parentEmail || parentEmail.toString().indexOf("@") === -1) {
     showAlertSafely("Invalid or missing email address in Column E (Row " + row + ").");
     return;
-  }
-
-  // Safety Check: Verify that the row is Blue (Yet to pay) or Awaiting Payment
-  var currentColor = getRowHighlightColor(sheet, row).toLowerCase();
-  var isBlue = (currentColor === "#cce5ff" || currentColor === "rgb(204, 229, 255)");
-  var isAwaiting = sheet.getRange(row, 8).getValue().toString().toLowerCase().indexOf("awaiting") !== -1 || sheet.getRange(row, 8).getValue().toString().toLowerCase().indexOf("due") !== -1;
-
-  if (actionType === "yes" && !isBlue && !isAwaiting) {
-    var proceed = SpreadsheetApp.getUi().alert(
-      "⚠️ Payment Status Notice",
-      "This row is not currently marked as Blue / Awaiting Payment. Has payment been confirmed in Stripe for " + childName + " (Week " + currentWeek + ")?\n\nClick OK to proceed anyway, or Cancel to stop.",
-      SpreadsheetApp.getUi().ButtonSet.OK_CANCEL
-    );
-    if (proceed !== SpreadsheetApp.getUi().Button.OK) {
-      return;
-    }
   }
 
   var zoomInfo = getZoomInfoForSlot(targetYear);
@@ -324,9 +360,10 @@ function processPostPaymentAction(sheet, row, actionType) {
       
       var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
       emailStatusCell.setValue("Zoom Link Sent on " + timestamp + " (Week " + currentWeek + ")");
-      sheet.getRange(row, 8).setValue("Paid");
-      setRowHighlight(sheet, row, "#d1fae5"); // Turns Green (Paid & Counted)
-      showAlertSafely("✅ Post-Payment Zoom details for Week " + currentWeek + " sent to " + parentEmail + "! (Row turned Green - Space Confirmed).");
+      sheet.getRange(row, 8).setValue("Zoom Sent");
+      setStudentWeekPaymentStatus(sheet, row, currentWeek, true); // Ensure Week X is marked "Paid"
+      setRowHighlight(sheet, row, COLOR_GREEN_ZOOM); // Turns VIVID GREEN
+      showAlertSafely("🚀 Instant Zoom link sent to " + parentEmail + " for Week " + currentWeek + "!\nRow is now 🟢 GREEN (Space Confirmed).");
     }
   } catch (err) {
     emailStatusCell.setValue("Error: " + err.message);
@@ -334,33 +371,35 @@ function processPostPaymentAction(sheet, row, actionType) {
   }
 }
 
-// --- 6. ACTION 3: CONTINUING CUSTOMER RE-ENROLLMENT EMAIL / DRAFT (NEXT WEEK) ---
+// --- 6. ACTION 3: CONTINUING CUSTOMER RE-ENROLLMENT EMAIL ---
 function processContinuingCustomerAction(sheet, row, actionType) {
   var parentName = sheet.getRange(row, 2).getValue();
   var childName = sheet.getRange(row, 3).getValue();
   var parentEmail = sheet.getRange(row, 5).getValue();
   var targetYear = sheet.getRange(row, 6).getValue().toString();
   var emailStatusCell = sheet.getRange(row, 9);
-  var currentWeek = getStudentWeekNumber(sheet, row);
-  var nextWeek = currentWeek + 1;
+  
+  // Note: Current student week is already set to the upcoming week by the Sunday reset
+  var targetWeek = getStudentWeekNumber(sheet, row);
+  var previousWeek = targetWeek > 1 ? targetWeek - 1 : 1;
   
   if (!parentEmail || parentEmail.toString().indexOf("@") === -1) {
     showAlertSafely("Invalid or missing email address in Column E (Row " + row + ").");
     return;
   }
 
-  var subject = "Logic 11+ Mathematics: Week " + nextWeek + " Re-enrollment for " + (childName || "Your Child");
+  var subject = "Logic 11+ Mathematics: Week " + targetWeek + " Re-enrollment for " + (childName || "Your Child");
 
   var body = "Dear " + (parentName || "Parent") + ",\n\n" +
-    "We hope " + (childName || "your child") + " enjoyed their recent Logic 11+ Mathematics session (Week " + currentWeek + ")!\n\n" +
-    "To confirm your child's attendance for WEEK " + nextWeek + "'s session (" + (targetYear || "Online Group Session") + "), please complete your weekly £15 tuition payment via the link below:\n\n" +
-    "💳 Week " + nextWeek + " Re-enrollment Link:\n" +
+    "We hope " + (childName || "your child") + " enjoyed their recent Logic 11+ Mathematics session (Week " + previousWeek + ")!\n\n" +
+    "To confirm your child's attendance for WEEK " + targetWeek + "'s session (" + (targetYear || "Online Group Session") + "), please complete your weekly £15 tuition payment via the link below:\n\n" +
+    "💳 Week " + targetWeek + " Re-enrollment Link:\n" +
     STRIPE_PAYMENT_LINK + "\n\n" +
     "⚠️ IMPORTANT PAYMENT & ATTENDANCE POLICY:\n" +
     "1. Please enter your child's exact registered name (" + (childName || "as registered") + ") at checkout.\n" +
     "2. If you have multiple children, please submit a separate payment for each child.\n" +
-    "3. Deadline: Payment must be completed prior to the day of the session. If payment is not completed before the session day, we will assume you do not wish to continue for this week, and the place will be opened to our waitlist.\n\n" +
-    "As soon as payment is confirmed, your Week " + nextWeek + " live classroom Zoom link will be dispatched.\n\n" +
+    "3. Deadline: Payment must be completed prior to the day of the session. If payment is not completed before the session day, we will assume you do not wish to continue for this week, and the place will be released.\n\n" +
+    "As soon as payment is confirmed, your Week " + targetWeek + " live classroom Zoom link will be dispatched.\n\n" +
     "Warm regards,\n" +
     "The Logic 11+ Team\n" +
     "logic11plus@gmail.com";
@@ -368,10 +407,9 @@ function processContinuingCustomerAction(sheet, row, actionType) {
   try {
     if (actionType === "draft") {
       GmailApp.createDraft(parentEmail, subject, body);
-      emailStatusCell.setValue("Continuing Draft Created (Week " + nextWeek + ") (" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm") + ")");
+      emailStatusCell.setValue("Continuing Draft Created (Week " + targetWeek + ") (" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm") + ")");
       sheet.getRange(row, 8).setValue("Draft");
-      setRowHighlight(sheet, row, "#fff2b2"); // Yellow
-      showAlertSafely("✅ Continuing Student draft created in Gmail for Week " + nextWeek + "!");
+      showAlertSafely("✅ Continuing Student draft created in Gmail for Week " + targetWeek + "!");
     } else {
       MailApp.sendEmail({
         to: parentEmail,
@@ -382,11 +420,10 @@ function processContinuingCustomerAction(sheet, row, actionType) {
       });
       
       var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
-      emailStatusCell.setValue("Continuing Notice Sent on " + timestamp + " (Week " + nextWeek + ")");
-      sheet.getRange(row, 8).setValue("Payment Due");
-      sheet.getRange(row, 10).setValue(nextWeek); // Advance to next week in Column J
-      setRowHighlight(sheet, row, "#cce5ff"); // Turns Blue (Due for next week)
-      showAlertSafely("✅ Continuing Student notice for Week " + nextWeek + " sent to " + parentEmail + " (Row turned Blue).");
+      emailStatusCell.setValue("Continuing Re-enrollment Sent on " + timestamp + " (Week " + targetWeek + ")");
+      sheet.getRange(row, 8).setValue("Payment Due (Week " + targetWeek + ")");
+      setRowHighlight(sheet, row, COLOR_PURPLE_RESET); // Keeps VIVID PURPLE until paid
+      showAlertSafely("✅ Continuing Student re-enrollment notice for Week " + targetWeek + " sent to " + parentEmail + "!");
     }
   } catch (err) {
     emailStatusCell.setValue("Error: " + err.message);
@@ -394,7 +431,7 @@ function processContinuingCustomerAction(sheet, row, actionType) {
   }
 }
 
-// --- 7. ACTION 4: WEEKLY AUTOMATIC RESET (TURNS PASSED SESSIONS BLUE) ---
+// --- 7. ACTION 4: SUNDAY WEEKLY RESET (ONLY ADVANCES STUDENTS WHO PAID FOR CURRENT WEEK) ---
 function runWeeklySessionReset() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName("Submissions") || ss.getActiveSheet();
@@ -414,19 +451,30 @@ function runWeeklySessionReset() {
     var currentWeek = parseInt(data[i][9], 10);
     if (isNaN(currentWeek) || currentWeek < 1) currentWeek = 1;
 
-    // Reset rows that were previously paid / active and not waitlisted
-    if (currentSendVal !== "waitlisted" && currentSendVal !== "no space" && currentSendVal !== "no spaces") {
-      setRowHighlight(sheet, rowNum, "#cce5ff"); // Turn Blue (Payment Due for next session)
-      sheet.getRange(rowNum, 8).setValue("Payment Due");
-      sheet.getRange(rowNum, 10).setValue(currentWeek + 1); // Increment week number
+    // Check if student was confirmed / paid / zoom sent for current week
+    var isConfirmedForCurrentWeek = (currentSendVal.indexOf("zoom") !== -1 || currentSendVal.indexOf("paid") !== -1);
+
+    if (isConfirmedForCurrentWeek) {
+      var nextWeek = currentWeek + 1;
+      
+      // Update Column J to next week
+      sheet.getRange(rowNum, 10).setValue(nextWeek);
+      
+      // Add Week (X+1) column & mark "Not Paid"
+      setStudentWeekPaymentStatus(sheet, rowNum, nextWeek, false);
+      
+      // Turn Purple (Waiting for Next Week Payment)
+      setRowHighlight(sheet, rowNum, COLOR_PURPLE_RESET);
+      sheet.getRange(rowNum, 8).setValue("Waiting for Next Week Payment");
+      sheet.getRange(rowNum, 9).setValue("Reset for Week " + nextWeek + " (Waiting Payment)");
       count++;
     }
   }
 
-  showAlertSafely("🔄 Weekly Reset Complete: " + count + " active student rows advanced to their next week and turned Blue (Payment Due).");
+  showAlertSafely("🔄 Sunday Weekly Reset Complete:\n" + count + " active student(s) who completed their session advanced to their next week, received their new Week Column (Not Paid), and turned 🟣 PURPLE.");
 }
 
-// --- 8. ACTION 5: CAPACITY TRACKER TAB GENERATOR (20 STUDENTS PER SLOT) ---
+// --- 8. ACTION 5: CAPACITY TRACKER TAB GENERATOR (20 SEATS PER SLOT) ---
 function generateCapacityTrackerTab() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var capacitySheet = ss.getSheetByName("Capacity Tracker");
@@ -439,7 +487,7 @@ function generateCapacityTrackerTab() {
 
   // Set Headers
   capacitySheet.getRange("A1:E1").setValues([[
-    "Slot / Cohort", "Max Limit", "Active Paid Spaces (Green / Zoom Sent)", "Spaces Remaining", "Status"
+    "Slot / Cohort", "Max Limit", "Active Confirmed Spaces (Green / Zoom Sent)", "Spaces Remaining", "Status"
   ]]).setFontWeight("bold").setBackground("#183153").setFontColor("#ffffff");
 
   var slots = [
@@ -455,109 +503,88 @@ function generateCapacityTrackerTab() {
   showAlertSafely("✅ 'Capacity Tracker' tab updated! (Limit: 20 students per slot).");
 }
 
-// --- 9. ACTION 6: NO SPACES / WAITLIST EMAIL ---
-function processNoSpacesAction(sheet, row) {
-  var parentName = sheet.getRange(row, 2).getValue();
-  var childName = sheet.getRange(row, 3).getValue();
-  var parentEmail = sheet.getRange(row, 5).getValue();
-  var targetYear = sheet.getRange(row, 6).getValue();
-  var emailStatusCell = sheet.getRange(row, 9);
-  
-  if (!parentEmail || parentEmail.toString().indexOf("@") === -1) {
-    showAlertSafely("Invalid or missing email address in Column E (Row " + row + ").");
-    emailStatusCell.setValue("Error: Missing Email");
-    return;
-  }
-  
-  var subject = "Logic 11+ Mathematics Tuition: Status Update for " + (childName || "Your Child");
-
-  var body = "Dear " + (parentName || "Parent") + ",\n\n" +
-    "Thank you for registering your interest in Logic 11+ Mathematics Tuition for " + (childName || "your child") + ".\n\n" +
-    "Due to high demand and our strict small-group capacity limits, we currently have no open spaces available in the requested session:\n" +
-    "• Requested Slot: " + (targetYear || "Online Group Session") + "\n\n" +
-    "We have automatically placed " + (childName || "your child") + " onto our Priority Waitlist. As soon as a space opens or an additional cohort is scheduled, you will be contacted immediately with first priority.\n\n" +
-    "If your schedule has flexibility or you would like to enquire about other days/times, please reply directly to this email.\n\n" +
-    "Warm regards,\n" +
-    "The Logic 11+ Team\n" +
-    "logic11plus@gmail.com";
-  
-  try {
-    MailApp.sendEmail({
-      to: parentEmail,
-      subject: subject,
-      body: body,
-      replyTo: "logic11plus@gmail.com",
-      name: "Logic 11+ Tuition"
-    });
-    
-    var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
-    emailStatusCell.setValue("Waitlist Email Sent on " + timestamp);
-    sheet.getRange(row, 8).setValue("Waitlisted");
-    setRowHighlight(sheet, row, "#ffd1d1"); // Red
-    showAlertSafely("✅ 'No Spaces / Waitlist' email sent successfully to " + parentEmail + "!");
-  } catch (err) {
-    emailStatusCell.setValue("Error: " + err.message);
-    showAlertSafely("❌ Error: " + err.message);
-  }
-}
-
-// --- 10. ACTION 7: WAITLIST SPACE AVAILABLE DRAFT ---
-function processWaitlistAvailableDraft(sheet, row) {
-  var parentName = sheet.getRange(row, 2).getValue();
-  var childName = sheet.getRange(row, 3).getValue();
-  var parentEmail = sheet.getRange(row, 5).getValue();
-  var rawTargetYear = sheet.getRange(row, 6).getValue().toString();
-  var emailStatusCell = sheet.getRange(row, 9);
-  
-  if (!parentEmail || parentEmail.toString().indexOf("@") === -1) {
-    showAlertSafely("Invalid or missing email address in Column E (Row " + row + ").");
-    emailStatusCell.setValue("Error: Missing Email");
-    return;
-  }
-
-  var cleanCohortYear = "Year 4 / Year 5";
-  if (rawTargetYear.indexOf("Year 4") !== -1) {
-    cleanCohortYear = "Year 4";
-  } else if (rawTargetYear.indexOf("Year 5") !== -1) {
-    cleanCohortYear = "Year 5";
-  }
-  
-  var subject = "Logic 11+ Mathematics: Space Now Available for " + (childName || "Your Child");
-
-  var body = "Dear " + (parentName || "Parent") + ",\n\n" +
-    "Great news! A space has opened up in our Logic 11+ Mathematics online group tuition for " + (childName || "your child") + ".\n\n" +
-    "Available Session Details:\n" +
-    "• Day & Time: [INSERT TIME SLOT HERE - e.g. Saturday 9:00 AM – 10:00 AM / Thursday 6:00 PM – 7:00 PM]\n" +
-    "• Cohort: " + cleanCohortYear + "\n" +
-    "• Fee: £15 per 1-hour session\n" +
-    "• Format: 100% Online Interactive Live Group Classroom\n\n" +
-    "💳 Payment Link to Secure Place:\n" +
-    STRIPE_PAYMENT_LINK + "\n\n" +
-    "⚠️ Critical Payment Note:\n" +
-    "Please enter your child's exact registered name (" + (childName || "as registered") + ") at checkout. If you have multiple children, please submit a separate payment for each child.\n" +
-    "Payment must be completed before the session day to confirm the place; otherwise, the space will be offered to the next family on our waitlist.\n\n" +
-    "Once payment is received, your child's Zoom classroom link will be emailed to you.\n\n" +
-    "Warm regards,\n" +
-    "The Logic 11+ Team\n" +
-    "logic11plus@gmail.com";
-  
-  try {
-    GmailApp.createDraft(parentEmail, subject, body);
-    emailStatusCell.setValue("Space Open Draft Created (" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm") + ")");
-    setRowHighlight(sheet, row, "#fff2b2"); // Yellow
-    showAlertSafely("✅ 'Space Available' draft created in Gmail Drafts for " + parentEmail + "! Fill in the day/time and send.");
-  } catch (err) {
-    emailStatusCell.setValue("Error: " + err.message);
-    showAlertSafely("❌ Error: " + err.message);
-  }
-}
-
-// --- 11. WEBHOOK: RECEIVE FORM SUBMISSION FROM WEBSITE ---
+// --- 9. WEBHOOK: RECEIVE FORM SUBMISSIONS & STRIPE PAYMENT WEBHOOKS ---
 function doPost(e) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    var data = JSON.parse(e.postData.contents);
-    
+    var rawContents = e.postData.contents;
+    var data = JSON.parse(rawContents);
+
+    // =========================================================================
+    // CASE A: STRIPE WEBHOOK EVENT (checkout.session.completed)
+    // =========================================================================
+    if (data && data.type && data.type.indexOf("checkout.session") !== -1) {
+      var session = data.data.object;
+      var stripeEmail = (session.customer_details && session.customer_details.email) ? session.customer_details.email.toLowerCase().trim() : "";
+      
+      // Extract custom field (Child's Name) from Stripe checkout
+      var stripeChildName = "";
+      if (session.custom_fields && session.custom_fields.length > 0) {
+        for (var f = 0; f < session.custom_fields.length; f++) {
+          var field = session.custom_fields[f];
+          if (field.text && field.text.value) {
+            stripeChildName = field.text.value.toLowerCase().trim();
+            break;
+          }
+        }
+      }
+
+      var lastRow = sheet.getLastRow();
+      var matchedRow = -1;
+
+      if (lastRow > 1) {
+        var sheetData = sheet.getRange(2, 1, lastRow - 1, 10).getValues();
+        
+        // 1st Priority Match: Child's registered name (Column C)
+        if (stripeChildName) {
+          for (var i = 0; i < sheetData.length; i++) {
+            var rowChildName = sheetData[i][2].toString().toLowerCase().trim();
+            if (rowChildName && (rowChildName === stripeChildName || stripeChildName.indexOf(rowChildName) !== -1 || rowChildName.indexOf(stripeChildName) !== -1)) {
+              matchedRow = i + 2;
+              break;
+            }
+          }
+        }
+
+        // 2nd Priority Match: Parent's email (Column E)
+        if (matchedRow === -1 && stripeEmail) {
+          for (var j = 0; j < sheetData.length; j++) {
+            var rowEmail = sheetData[j][4].toString().toLowerCase().trim();
+            if (rowEmail === stripeEmail) {
+              matchedRow = j + 2;
+              break;
+            }
+          }
+        }
+      }
+
+      if (matchedRow !== -1) {
+        var currentWeek = getStudentWeekNumber(sheet, matchedRow);
+        var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+
+        // Step 1: Record Stripe payment in sheet, mark Week X Paid, & turn BLUE
+        sheet.getRange(matchedRow, 8).setValue("Paid in Stripe");
+        sheet.getRange(matchedRow, 9).setValue("Stripe Payment Verified on " + timestamp + " (Week " + currentWeek + ")");
+        setStudentWeekPaymentStatus(sheet, matchedRow, currentWeek, true); // Mark Week X as "Paid"
+        setRowHighlight(sheet, matchedRow, COLOR_BLUE_PAID); // 🔵 Auto-Turn BLUE
+
+        // Step 2: Instantly send Zoom link & turn GREEN
+        processPostPaymentAction(sheet, matchedRow, "yes");
+
+        return ContentService
+          .createTextOutput(JSON.stringify({ result: "success", matched_row: matchedRow, status: "paid_and_zoom_sent" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } else {
+        Logger.log("Stripe payment received but no matching row found for email: " + stripeEmail + ", child: " + stripeChildName);
+        return ContentService
+          .createTextOutput(JSON.stringify({ result: "unmatched", email: stripeEmail, child: stripeChildName }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    // =========================================================================
+    // CASE B: WEBSITE FORM SUBMISSION (Initial Registration)
+    // =========================================================================
     var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
     var parentName = data.parentName || "";
     var childName = data.childName || "";
@@ -566,8 +593,12 @@ function doPost(e) {
     var targetYear = data.targetYear || "";
     var customNote = data.notes || "";
     var sendFurtherEmail = "No";
-    var emailStatus = "Pending Review";
+    var emailStatus = "New Submission - Pending Confirmation";
     var weekNumber = 1;
+    var week1Status = "Not Paid";
+
+    // Ensure Column K (Week 1) header exists
+    getWeekColumnIndex(sheet, 1);
 
     sheet.appendRow([
       timestamp,
@@ -579,11 +610,20 @@ function doPost(e) {
       customNote,
       sendFurtherEmail,
       emailStatus,
-      weekNumber
+      weekNumber,
+      week1Status
     ]);
 
+    var newRow = sheet.getLastRow();
+    
+    // Style Week 1 cell as Not Paid (Red text)
+    sheet.getRange(newRow, 11).setFontColor("#b91c1c").setFontWeight("normal");
+    
+    // Auto-turn row 🔴 VIVID RED on new submission
+    setRowHighlight(sheet, newRow, COLOR_RED_NEW);
+
     return ContentService
-      .createTextOutput(JSON.stringify({ result: "success", row: sheet.getLastRow() }))
+      .createTextOutput(JSON.stringify({ result: "success", row: newRow }))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
@@ -597,7 +637,7 @@ function doGet(e) {
   return ContentService.createTextOutput("Logic 11+ Google Sheet Webhook is active!");
 }
 
-// --- 12. ON-EDIT TRIGGER ---
+// --- 10. ON-EDIT TRIGGER ---
 function onEditTrigger(e) {
   if (!e || !e.source || !e.range) return;
   var sheet = e.source.getActiveSheet();
@@ -610,14 +650,14 @@ function onEditTrigger(e) {
     if (!rawVal) return;
     var val = rawVal.toString().trim().toLowerCase();
     
-    if (val === "yes") {
+    if (val === "yes" || val === "confirm") {
       processConfirmationAction(sheet, row, "yes");
-    } else if (val === "draft") {
-      processConfirmationAction(sheet, row, "draft");
-    } else if (val === "paid" || val === "zoom") {
+    } else if (val === "paid") {
+      markSelectedRowAsPaid();
+    } else if (val === "zoom" || val === "send zoom") {
       processPostPaymentAction(sheet, row, "yes");
-    } else if (val === "waitlist" || val === "no space" || val === "no spaces") {
-      processNoSpacesAction(sheet, row);
+    } else if (val === "reset" || val === "purple") {
+      setRowHighlight(sheet, row, COLOR_PURPLE_RESET);
     }
   }
 }
