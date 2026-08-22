@@ -520,16 +520,21 @@ a:hover {
 }
 
 .pill-icon {
-  font-size: 1.35rem;
-  background-color: #ffffff;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
+  background-color: var(--c-surface);
+  color: var(--c-terracotta);
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--c-border);
   box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.pill-icon svg {
+  stroke: var(--c-terracotta);
 }
 
 .pill-item strong {
@@ -618,7 +623,7 @@ a:hover {
 
 .section-header {
   max-width: 700px;
-  margin-bottom: 3.5rem;
+  margin: 0 auto 3.5rem;
 }
 
 .section-header.text-center {
@@ -633,21 +638,25 @@ a:hover {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--c-terracotta);
-  margin-bottom: 0.5rem;
+  background-color: var(--c-terracotta-soft);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  margin-bottom: 0.75rem;
 }
 
 .kicker-light {
-  color: #fed7aa !important;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #fed7aa;
 }
 
 .section-subtitle {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--c-text-muted);
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
 }
 
 /* --------------------------------------------------------------------------
-   Approach Section
+   Our Approach Section
    -------------------------------------------------------------------------- */
 .approach-section {
   border-bottom: 1px solid var(--c-border);
@@ -655,18 +664,18 @@ a:hover {
 
 .approach-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.75rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
 }
 
 .approach-box {
-  background: #ffffff;
+  background-color: #ffffff;
   border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  padding: 2rem;
+  border-radius: var(--radius-lg);
+  padding: 2rem 1.5rem;
+  box-shadow: var(--shadow-sm);
   position: relative;
   transition: var(--transition);
-  box-shadow: var(--shadow-sm);
 }
 
 .approach-box:hover {
@@ -676,27 +685,39 @@ a:hover {
 }
 
 .approach-number {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
   font-family: var(--font-display);
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--c-border-strong);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text-muted);
+  opacity: 0.6;
+  margin-bottom: 0.5rem;
 }
 
 .approach-icon-wrap {
-  font-size: 2rem;
+  background: var(--c-terracotta-soft);
+  color: var(--c-terracotta);
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 1.25rem;
+  border: 1px solid rgba(196, 91, 54, 0.15);
+}
+
+.approach-icon-wrap svg {
+  stroke: var(--c-terracotta);
 }
 
 .approach-box h3 {
   font-size: 1.15rem;
   margin-bottom: 0.75rem;
+  color: var(--c-primary);
 }
 
 .approach-box p {
-  font-size: 0.925rem;
+  font-size: 0.9rem;
   color: var(--c-text-body);
   line-height: 1.6;
 }
@@ -741,16 +762,20 @@ a:hover {
 }
 
 .feature-icon {
-  font-size: 1.5rem;
-  background: var(--c-surface-warm);
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-sm);
+  background: var(--c-terracotta-soft);
+  color: var(--c-terracotta);
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 1px solid var(--c-border);
+  border: 1px solid rgba(196, 91, 54, 0.15);
+}
+
+.feature-icon svg {
+  stroke: var(--c-terracotta);
 }
 
 .feature-card h4 {
@@ -962,7 +987,30 @@ a:hover {
 }
 
 .callout-icon {
-  font-size: 1.35rem;
+  background: var(--c-terracotta-soft);
+  color: var(--c-terracotta);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(196, 91, 54, 0.15);
+}
+
+.callout-icon svg {
+  stroke: var(--c-terracotta);
+}
+
+.notice-icon svg {
+  stroke: var(--c-terracotta);
+}
+
+.warning-icon-custom svg {
+  stroke: #d97706;
+  vertical-align: -2px;
+  margin-right: 4px;
 }
 
 .warm-callout strong {
