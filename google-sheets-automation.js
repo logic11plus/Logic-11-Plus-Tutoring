@@ -44,8 +44,8 @@ var ZOOM_LINKS = {
     meetingId: "111 222 3333",
     passcode: "LOGIC11"
   },
-  "Year 5 — Saturday 10:00 AM": {
-    topic: "Year 5 Logic 11+ Mathematics (Saturday 10:00 AM – 11:00 AM)",
+  "Year 5 — Saturday 11:00 AM": {
+    topic: "Year 5 Logic 11+ Mathematics (Saturday 11:00 AM – 12:00 PM)",
     url: "https://zoom.us/j/YOUR_Y5_SAT_MEETING_ID?pwd=YOUR_PASSWORD",
     meetingId: "444 555 6666",
     passcode: "LOGIC11"
@@ -56,8 +56,8 @@ var ZOOM_LINKS = {
     meetingId: "777 888 9999",
     passcode: "LOGIC11"
   },
-  "Year 4 — Thursday 6:00 PM": {
-    topic: "Year 4 Logic 11+ Mathematics (Thursday 6:00 PM – 7:00 PM)",
+  "Year 4 — Thursday 6:30 PM": {
+    topic: "Year 4 Logic 11+ Mathematics (Thursday 6:30 PM – 7:30 PM)",
     url: "https://zoom.us/j/YOUR_Y4_THU_MEETING_ID?pwd=YOUR_PASSWORD",
     meetingId: "000 111 2222",
     passcode: "LOGIC11"
@@ -152,10 +152,10 @@ function getStudentWeekNumber(sheet, row) {
 // Helper to extract clean Zoom information based on target slot string
 function getZoomInfoForSlot(slotString) {
   var str = slotString ? slotString.toString() : "";
-  if (str.indexOf("Saturday 9:00 AM") !== -1) return ZOOM_LINKS["Year 4 — Saturday 9:00 AM"];
-  if (str.indexOf("Saturday 10:00 AM") !== -1) return ZOOM_LINKS["Year 5 — Saturday 10:00 AM"];
-  if (str.indexOf("Thursday 5:00 PM") !== -1) return ZOOM_LINKS["Year 5 — Thursday 5:00 PM"];
-  if (str.indexOf("Thursday 6:00 PM") !== -1) return ZOOM_LINKS["Year 4 — Thursday 6:00 PM"];
+  if (str.indexOf("Saturday 9:00 AM") !== -1 || str.indexOf("9:00") !== -1 && str.indexOf("Sat") !== -1) return ZOOM_LINKS["Year 4 — Saturday 9:00 AM"];
+  if (str.indexOf("Saturday 11:00 AM") !== -1 || str.indexOf("11:00") !== -1 && str.indexOf("Sat") !== -1) return ZOOM_LINKS["Year 5 — Saturday 11:00 AM"];
+  if (str.indexOf("Thursday 5:00 PM") !== -1 || str.indexOf("5:00") !== -1 && str.indexOf("Thu") !== -1) return ZOOM_LINKS["Year 5 — Thursday 5:00 PM"];
+  if (str.indexOf("Thursday 6:30 PM") !== -1 || str.indexOf("6:30") !== -1 && str.indexOf("Thu") !== -1) return ZOOM_LINKS["Year 4 — Thursday 6:30 PM"];
   
   return {
     topic: "Logic 11+ Online Mathematics Tuition",
@@ -610,11 +610,11 @@ function generateCapacityTrackerTab() {
       if (isActive) {
         if (slot.indexOf("9") !== -1 || (slot.indexOf("sat") !== -1 && slot.indexOf("4") !== -1)) {
           countY4Sat++;
-        } else if (slot.indexOf("10") !== -1 || (slot.indexOf("sat") !== -1 && slot.indexOf("5") !== -1)) {
+        } else if (slot.indexOf("11") !== -1 || (slot.indexOf("sat") !== -1 && slot.indexOf("5") !== -1)) {
           countY5Sat++;
         } else if (slot.indexOf("5") !== -1 || (slot.indexOf("thu") !== -1 && slot.indexOf("5") !== -1)) {
           countY5Thu++;
-        } else if (slot.indexOf("6") !== -1 || (slot.indexOf("thu") !== -1 && slot.indexOf("4") !== -1)) {
+        } else if (slot.indexOf("6:30") !== -1 || slot.indexOf("6") !== -1 || (slot.indexOf("thu") !== -1 && slot.indexOf("4") !== -1)) {
           countY4Thu++;
         }
       }
@@ -623,14 +623,14 @@ function generateCapacityTrackerTab() {
 
   var slots = [
     ["Year 4 — Saturday 9:00 AM – 10:00 AM", MAX_CAPACITY_PER_SLOT, countY4Sat, '=B2-C2', '=IF(D2<=0, "FULL", D2&" SPACES LEFT")'],
-    ["Year 5 — Saturday 10:00 AM – 11:00 AM", MAX_CAPACITY_PER_SLOT, countY5Sat, '=B3-C3', '=IF(D3<=0, "FULL", D3&" SPACES LEFT")'],
+    ["Year 5 — Saturday 11:00 AM – 12:00 PM", MAX_CAPACITY_PER_SLOT, countY5Sat, '=B3-C3', '=IF(D3<=0, "FULL", D3&" SPACES LEFT")'],
     ["Year 5 — Thursday 5:00 PM – 6:00 PM", MAX_CAPACITY_PER_SLOT, countY5Thu, '=B4-C4', '=IF(D4<=0, "FULL", D4&" SPACES LEFT")'],
-    ["Year 4 — Thursday 6:00 PM – 7:00 PM", MAX_CAPACITY_PER_SLOT, countY4Thu, '=B5-C5', '=IF(D5<=0, "FULL", D5&" SPACES LEFT")']
+    ["Year 4 — Thursday 6:30 PM – 7:30 PM", MAX_CAPACITY_PER_SLOT, countY4Thu, '=B5-C5', '=IF(D5<=0, "FULL", D5&" SPACES LEFT")']
   ];
 
   capacitySheet.getRange(2, 1, slots.length, 5).setValues(slots);
 
-  showAlertSafely("✅ 'Capacity Tracker' updated successfully from sheet '" + studentSheet.getName() + "'!\n\nActive students detected:\n• Year 4 (Sat 9:00 AM): " + countY4Sat + "\n• Year 5 (Sat 10:00 AM): " + countY5Sat + "\n• Year 5 (Thu 5:00 PM): " + countY5Thu + "\n• Year 4 (Thu 6:00 PM): " + countY4Thu);
+  showAlertSafely("✅ 'Capacity Tracker' updated successfully from sheet '" + studentSheet.getName() + "'!\n\nActive students detected:\n• Year 4 (Sat 9:00 AM): " + countY4Sat + "\n• Year 5 (Sat 11:00 AM): " + countY5Sat + "\n• Year 5 (Thu 5:00 PM): " + countY5Thu + "\n• Year 4 (Thu 6:30 PM): " + countY4Thu);
 }
 
 // --- 10. WEBHOOK: RECEIVE FORM SUBMISSIONS & STRIPE PAYMENT WEBHOOKS ---
