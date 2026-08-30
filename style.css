@@ -1362,8 +1362,14 @@ a:hover {
 }
 
 /* --------------------------------------------------------------------------
-   Responsive
+   Responsive & Mobile Fluidity (Prevents any off-screen horizontal scrolling)
    -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .approach-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 900px) {
   .hero-grid,
   .why-maths-grid,
@@ -1371,19 +1377,20 @@ a:hover {
   .booking-grid,
   .footer-top {
     grid-template-columns: 1fr;
-    gap: 2.5rem;
+    gap: 2.25rem;
   }
 
-  h1 {
-    font-size: 2.4rem;
+  h1, .hero-title {
+    font-size: 2.35rem;
   }
 
   .format-card-container {
-    padding: 2.5rem 1.75rem;
+    padding: 2.25rem 1.5rem;
   }
 }
 
 @media (max-width: 768px) {
+  /* Navigation */
   .nav-links {
     display: none;
   }
@@ -1403,22 +1410,129 @@ a:hover {
     padding: 1.5rem;
     box-shadow: var(--shadow-lg);
     border-bottom: 1px solid var(--c-border);
+    gap: 1.25rem;
   }
 
-  h1 {
-    font-size: 2.1rem;
+  /* Typography */
+  h1, .hero-title {
+    font-size: 1.95rem;
+    line-height: 1.25;
+  }
+
+  h2 {
+    font-size: 1.65rem;
+  }
+
+  .hero-description {
+    font-size: 1rem;
+  }
+
+  /* Layout Sections */
+  .section {
+    padding: 3.5rem 0;
+  }
+
+  .hero-section {
+    padding: 2.5rem 0 2rem;
   }
 
   .hero-cta-wrap {
     flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+    margin-bottom: 2rem;
   }
 
-  .btn-large {
+  .btn-large, .btn-primary, .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hero-pills {
+    flex-direction: column;
+    gap: 1rem;
+    padding-top: 1.25rem;
+  }
+
+  .pill-item {
     width: 100%;
   }
 
-  .booking-form-card {
-    padding: 1.75rem 1.25rem;
+  .approach-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .curriculum-grid, .faq-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Cards & Forms */
+  .enrollment-summary-card,
+  .booking-form-card,
+  .format-card-container {
+    padding: 1.5rem 1.15rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .cta-inner-card {
+    padding: 1.5rem 1.15rem;
+  }
+
+  /* Summary Lines & Tables */
+  .summary-line {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .slot-pricing-badge {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 1rem;
+  }
+
+  .announcement-inner {
+    flex-direction: column;
+    gap: 0.35rem;
+    text-align: center;
+    font-size: 0.78rem;
+  }
+
+  .brand-name {
+    font-size: 1.18rem;
+  }
+
+  .brand-badge {
+    width: 34px;
+    height: 34px;
+  }
+
+  h1, .hero-title {
+    font-size: 1.7rem;
+  }
+
+  .hero-badge {
+    font-size: 0.78rem;
+    padding: 0.3rem 0.65rem;
+    max-width: 100%;
+  }
+
+  .modal-window {
+    padding: 1.5rem 1rem;
+  }
+
+  .email-copy-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .btn-copy {
+    width: 100%;
+    justify-content: center;
   }
 }
 
